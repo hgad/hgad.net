@@ -2,14 +2,11 @@
 # The humans responsible & technology colophon
 
 # TEAM
-
-    <name> -- <role> -- <twitter>
-
-# THANKS
-
-    <name>
+    Haitham Gad -- Designer and Developer -- twitter.com/hgad
 
 # TECHNOLOGY COLOPHON
+    HTML5, HTML5 Boilerplate, CSS3, Hakyll, Sass, Solarized,
+    Markdown, Pandoc, Disqus, Normalize.css, jQuery, Modernizr.
 
-    HTML5, CSS3
-    Normalize.css, jQuery, Modernizr
+# Favicon: Gimp font: "Bell MT Italic", Color: "Solarized Base03"
+
