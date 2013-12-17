@@ -94,7 +94,8 @@
       <img src="../img/logo_small.png" width="150" height="80">
     </aside>
 
-    <aside class="socialbar">
+    <!--[if !IE]-->
+    <aside id="socialbar">
       <section>
         <a href="http://google.com/+HaithamGad" target="_blank" title="Google+" class="hgad-social-google-plus"></a>
         <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn" class="hgad-social-linkedin"></a>
@@ -103,6 +104,7 @@
         <a href="../feed.xml" title="Feed" class="hgad-social-feed"></a>
       </section>
     </aside>
+    <!--[endif]-->
 
     <footer>
       <table>
@@ -126,6 +128,14 @@
     <script>
       window.jQuery ||
       document.write('<script src="../js/vendor/jquery-1.10.2.min.js"><\/script>')
+    </script>
+
+    <script>
+      var isFirefox = typeof InstallTrigger !== 'undefined';
+      if (isFirefox) {
+        var elem = document.getElementById("socialbar");
+        elem.parentNode.removeChild(elem);
+      }
     </script>
 
     <script src="../js/plugins.js"></script>

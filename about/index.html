@@ -122,6 +122,8 @@
   converted to HTML using
   <a target="_blank" href="http://johnmacfarlane.net/pandoc">Pandoc</a>. Post
   comments are powered by <a target="_blank" href="http://disqus.com">Disqus</a>.
+  Social media icons were downloaded from
+  <a target="_blank" href="http://icomoon.io">IcoMoon</a>.
   The website is designed and maintained by <a href="../about">myself</a>, and the
   content is licensed under a
   <a target="_blank" href="http://creativecommons.org/licenses/by/3.0">
@@ -137,7 +139,8 @@
 <section class="about-section">
   <h2>Contact</h2>
   <p>
-  In addition to the social media links below, I'm happy to correspond by email at
+  In addition to the social media links below (probably only visible if you're
+  using Chrome or Safari), I'm happy to correspond by email at
   <a href="mailto:hgad@hgad.net">hgad@hgad.net</a>.
   </p>
 </section>
@@ -149,7 +152,8 @@
       <img src="../img/logo_small.png" width="150" height="80">
     </aside>
 
-    <aside class="socialbar">
+    <!--[if !IE]-->
+    <aside id="socialbar">
       <section>
         <a href="http://google.com/+HaithamGad" target="_blank" title="Google+" class="hgad-social-google-plus"></a>
         <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn" class="hgad-social-linkedin"></a>
@@ -158,6 +162,7 @@
         <a href="../feed.xml" title="Feed" class="hgad-social-feed"></a>
       </section>
     </aside>
+    <!--[endif]-->
 
     <footer>
       <table>
@@ -181,6 +186,14 @@
     <script>
       window.jQuery ||
       document.write('<script src="../js/vendor/jquery-1.10.2.min.js"><\/script>')
+    </script>
+
+    <script>
+      var isFirefox = typeof InstallTrigger !== 'undefined';
+      if (isFirefox) {
+        var elem = document.getElementById("socialbar");
+        elem.parentNode.removeChild(elem);
+      }
     </script>
 
     <script src="../js/plugins.js"></script>
