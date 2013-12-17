@@ -376,7 +376,7 @@ typeof (<span class="dt">If</span> e1 e2 e3)
 
     </article>
 
-    <aside class="logo">
+    <aside id="logo">
       <img src="../../img/logo_small.png" width="150" height="80">
     </aside>
 
@@ -420,6 +420,7 @@ typeof (<span class="dt">If</span> e1 e2 e3)
       if (isFirefox || isIE) {
         var elem = document.getElementById("socialbar");
         elem.parentNode.removeChild(elem);
+        document.getElementById("logo").style.paddingBottom = "80px";
       }
     </script>
 
