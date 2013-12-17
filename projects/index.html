@@ -85,7 +85,6 @@
       <img src="../img/logo_small.png" width="150" height="80">
     </aside>
 
-    <!--[if !IE]-->
     <aside id="socialbar">
       <section>
         <a href="http://google.com/+HaithamGad" target="_blank" title="Google+" class="hgad-social-google-plus"></a>
@@ -95,7 +94,6 @@
         <a href="../feed.xml" title="Feed" class="hgad-social-feed"></a>
       </section>
     </aside>
-    <!--[endif]-->
 
     <footer>
       <table>
@@ -123,7 +121,8 @@
 
     <script>
       var isFirefox = typeof InstallTrigger !== 'undefined';
-      if (isFirefox) {
+      var isIE = /*@cc_on!@*/false || !!document.documentMode;
+      if (isFirefox || isIE) {
         var elem = document.getElementById("socialbar");
         elem.parentNode.removeChild(elem);
       }
