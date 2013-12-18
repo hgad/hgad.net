@@ -14,6 +14,7 @@
     <link rel="shortcut icon" type="image/png" href="../img/favicon.png">
     <link rel="stylesheet" href="../css/normalize.css">
     <link rel="stylesheet" href="../css/style.css">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
     <script src="../js/vendor/modernizr-2.6.2.min.js"></script>
     <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
     </script>
@@ -107,15 +108,21 @@
       <img src="../img/logo_small.png" width="150" height="80">
     </aside>
 
+    <!--[if gt IE 7]><!-->
     <aside id="socialbar">
       <section>
-        <a href="http://google.com/+HaithamGad" target="_blank" title="Google+" class="hgad-social-google-plus"></a>
-        <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn" class="hgad-social-linkedin"></a>
-        <a href="https://twitter.com/hgad" target="_blank" title="Twitter" class="hgad-social-twitter"></a>
-        <a href="https://github.com/hgad" target="_blank" title="GitHub" class="hgad-social-github"></a>
-        <a href="../feed.xml" title="Feed" class="hgad-social-feed"></a>
+        <a href="http://google.com/+HaithamGad" target="_blank" title="Google+">
+          <i class="fa fa-google-plus-square"></i></a>
+        <a href="https://github.com/hgad" target="_blank" title="GitHub">
+          <i class="fa fa-github-square"></i></a>
+        <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
+          <i class="fa fa-twitter-square"></i></a>
+        <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-square"></i></a>
+        <a href="../feed.xml" title="Feed">
+          <i class="fa fa-rss-square"></i></a>
       </section>
     </aside>
+    <!--<![endif]-->
 
     <footer>
       <table>
@@ -137,16 +144,6 @@
     <script>
       window.jQuery ||
       document.write('<script src="../js/vendor/jquery-1.10.2.min.js"><\/script>')
-    </script>
-
-    <script>
-      var isFirefox = typeof InstallTrigger !== 'undefined';
-      var isIE = /*@cc_on!@*/false || !!document.documentMode;
-      if (isFirefox || isIE) {
-        var elem = document.getElementById("socialbar");
-        elem.parentNode.removeChild(elem);
-        document.getElementById("logo").style.paddingBottom = "80px";
-      }
     </script>
 
     <script src="../js/plugins.js"></script>
