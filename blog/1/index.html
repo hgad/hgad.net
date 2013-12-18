@@ -81,7 +81,7 @@
 
 <section class="post-list">
   <header class="post-header">
-  <h2><a href="../../posts/understanding-types-part-1/"> Understanding Types — Part 1/2 </a></h2>
+  <h2><a href="../../posts/how-type-systems-work-part1/"> How Type Systems Work — Part 1 </a></h2>
   <p class="post-info">
     December 13, 2013
   </p>
@@ -89,7 +89,7 @@
 
 <section class="post-body">
   <p>
-  <p>This post attempts to give a light introduction to the basics of type systems through the use of a tiny language of simple expressions. We’ll start by giving formal definitions for the syntax and semantics of the language of <em>Untyped Expressions</em><sup><a href="#fn1" class="footnoteRef" id="fnref1">1</a></sup>. Next, we’ll see how to add types to such language by defining a typing relation, and how types could be useful in eliminating certain kinds of errors (<em>type errors</em>) before evaluation. In a <a href="../../posts/understanding-types-part-2.html">future post</a>, we’ll be applying the same concepts, but on a Turing-complete language: <em>the Lambda Calculus</em>.</p>
+  <p>This post attempts to give a light introduction to the basics of type systems through the use of a tiny language of simple expressions. We’ll start by giving formal definitions for the syntax and semantics of the language of <em>Untyped Expressions</em><sup><a href="#fn1" class="footnoteRef" id="fnref1">1</a></sup>. Next, we’ll see how to add types to such language by defining a typing relation, and how types could be useful in eliminating certain kinds of errors (<em>type errors</em>) before evaluation. In a <a href="../../posts/how-type-systems-work-part2.html">future post</a>, we’ll be applying the same concepts, but on a Turing-complete language: <em>the Lambda Calculus</em>.</p>
 <p>These two posts are inspired by Benjamin Pierce’s book: “<em>Types and Programming Languages</em>”. In fact, both languages are actually defined in the book. The book also provides <em>OCaml</em> evaluators and type checkers for each of them. We’ll attempt to implement similar components here too<sup><a href="#fn2" class="footnoteRef" id="fnref2">2</a></sup>.</p>
 <p>It so happens though that I don’t know much about OCaml. Fortunately, I have some experience with a very close relative language of OCaml — <em>Haskell</em>. Being members of the same family of languages, Haskell and OCaml have very similar syntax, so it shouldn’t be hard to compare every component defined here with its twin in the book.</p>
 <h3 id="untyped-expressions">Untyped Expressions</h3>

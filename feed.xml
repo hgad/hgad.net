@@ -10,9 +10,9 @@
     </author>
     <updated>2013-12-13T00:00:00Z</updated>
     <entry>
-    <title>Understanding Types — Part 1/2</title>
-    <link href="http://hgad.net/posts/understanding-types-part-1/index.html" />
-    <id>http://hgad.net/posts/understanding-types-part-1/index.html</id>
+    <title>How Type Systems Work — Part 1</title>
+    <link href="http://hgad.net/posts/how-type-systems-work-part1/index.html" />
+    <id>http://hgad.net/posts/how-type-systems-work-part1/index.html</id>
     <published>2013-12-13T00:00:00Z</published>
     <updated>2013-12-13T00:00:00Z</updated>
     <summary type="html"><![CDATA[Introduction to type systems by demonstrating them on a language of simple expressions defined in Benjamin Pierce's "Types and Programming Languages".]]></summary>
