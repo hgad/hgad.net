@@ -8,7 +8,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Why start a blog?</title>
     <meta name="description" content="My first blog post, about why to start a new blog!">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=0.67">
 
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <link rel="shortcut icon" type="image/png" href="../../img/favicon.png">
@@ -25,7 +25,6 @@
 
     <script type="text/javascript">
       (function(doc) {
-
         var addEvent = 'addEventListener',
             type = 'gesturestart',
             qsa = 'querySelectorAll',
@@ -33,13 +32,14 @@
             meta = qsa in doc ? doc[qsa]('meta[name=viewport]') : [];
 
         function fix() {
-          meta.content = 'width=device-width,minimum-scale=' + scales[0] + ',maximum-scale=' + scales[1];
+          meta.content = 'width=device-width,minimum-scale=' + scales[0] +
+                         ',maximum-scale=' + scales[1];
           doc.removeEventListener(type, fix, true);
         }
 
         if ((meta = meta[meta.length - 1]) && addEvent in doc) {
           fix();
-          scales = [.25, 1.6];
+          scales = [.67, 0.67];
           doc[addEvent](type, fix, true);
         }
 
