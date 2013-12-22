@@ -8,7 +8,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Haitham Gad's Website</title>
     <meta name="description" content="Haitham Gad's home - a place where you can read about programming, mathematics and computer science!">
-    <meta name="viewport" content="width=device-width, initial-scale=0.67">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
     <link rel="shortcut icon" type="image/png" href="./img/favicon.png">
@@ -21,29 +21,6 @@
     </script>
 
     <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
-    </script>
-
-    <script type="text/javascript">
-      (function(doc) {
-        var addEvent = 'addEventListener',
-            type = 'gesturestart',
-            qsa = 'querySelectorAll',
-            scales = [0.67, 0.67],
-            meta = qsa in doc ? doc[qsa]('meta[name=viewport]') : [];
-
-        function fix() {
-          meta.content = 'width=device-width,minimum-scale=' + scales[0] +
-                         ',maximum-scale=' + scales[1];
-          doc.removeEventListener(type, fix, true);
-        }
-
-        if ((meta = meta[meta.length - 1]) && addEvent in doc) {
-          fix();
-          scales = [.25, 1.6];
-          doc[addEvent](type, fix, true);
-        }
-
-      }(document));
     </script>
   </head>
   <body>
