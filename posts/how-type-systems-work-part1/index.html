@@ -82,9 +82,9 @@
 
 <section class="post-body">
   <p>
-  <p>This post attempts to give a light introduction to the basics of type systems through the use of a tiny language of simple expressions. We’ll start by giving formal definitions for the syntax and semantics of the language of <em>Untyped Expressions</em><sup><a href="#fn1" class="footnoteRef" id="fnref1">1</a></sup>. Next, we’ll see how to add types to such language by defining a typing relation, and how types could be useful in eliminating certain kinds of errors (<em>type errors</em>) before evaluation. In a <a href="../../posts/how-type-systems-work-part2.html">future post</a>, we’ll be applying the same concepts, but on a Turing-complete language: <em>the Lambda Calculus</em>.</p>
-<p>These two posts are inspired by Benjamin Pierce’s book: “<em>Types and Programming Languages</em>”. In fact, both languages are actually defined in the book. The book also provides <em>OCaml</em> evaluators and type checkers for each of them. We’ll attempt to implement similar components here too<sup><a href="#fn2" class="footnoteRef" id="fnref2">2</a></sup>.</p>
-<p>It so happens though that I don’t know much about OCaml. Fortunately, I have some experience with a very close relative language of OCaml — <em>Haskell</em>. Being members of the same family of languages, Haskell and OCaml have very similar syntax, so it shouldn’t be hard to compare every component defined here with its twin in the book.</p>
+  <p>This post attempts to give a light introduction to the basics of type systems through the use of a tiny language of simple expressions. We’ll start by giving formal definitions for the syntax and semantics of the language of <em>Untyped Expressions</em>. Next, we’ll see how to add types to such language by defining a typing relation, and how types could be useful in eliminating certain kinds of errors (<em>type errors</em>) before evaluation. In a <a href="../../posts/how-type-systems-work-part2.html">future post</a>, we’ll be applying the same concepts, but on a Turing-complete language: <em>the Lambda Calculus</em>.</p>
+<p>These two posts are inspired by Benjamin Pierce’s book: “<em>Types and Programming Languages</em>”. In fact, both languages are actually defined in the book. The book also provides <em>OCaml</em> evaluators and type checkers for each of them. We’ll attempt to implement similar components here too<sup><a href="#fn1" class="footnoteRef" id="fnref1">1</a></sup>.</p>
+<p>It so happens though that I don’t know much about OCaml. Fortunately, I have some experience with a very closely related language — <em>Haskell</em>. Being members of the same family of languages, Haskell and OCaml have very similar syntax, so it shouldn’t be hard to compare every component defined here with its twin in the book.</p>
 <h3 id="untyped-expressions">Untyped Expressions</h3>
 <p>The first language introduced in the book is that of untyped expressions. It is a very simple language of expressions involving only booleans and natural numbers. Booleans can either be <code>true</code> or <code>false</code>, while a natural number is defined inductively as being either <code>0</code> or the successor of a natural number (denoted <code>succ n</code>). Three more primitive expressions are also define to be part of the language:</p>
 <ol style="list-style-type: decimal">
@@ -351,8 +351,7 @@ typeof (<span class="dt">If</span> e1 e2 e3)
 <div class="footnotes">
 <hr />
 <ol>
-<li id="fn1"><p>For the purposes of this post, you may think of “<em>Untyped</em>” as synonym to “<em>Dynamically-Typed</em>”.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>The code of which can be found on <a href="https://github.com/hgad/tapl/blob/master/expressions.hs" target="_blank">GitHub</a>.<a href="#fnref2">↩</a></p></li>
+<li id="fn1"><p>The code of which can be found on <a href="https://github.com/hgad/tapl/blob/master/expressions.hs" target="_blank">GitHub</a>.<a href="#fnref1">↩</a></p></li>
 </ol>
 </div>
   </p>
