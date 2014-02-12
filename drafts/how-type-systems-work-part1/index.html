@@ -34,21 +34,26 @@
     <!-- Add your site or application content here -->
     <header>
       <nav>
+        <a href="../../">
+          <img id="lambda" src="../../img/lambda.png" width="150" height="100">
+        </a>
+        <hr>
         <table>
-        <tr>
-          <td>
-            <a href="../../">home</a>
-          </td>
-          <td>
-            <a href="../../blog/1">blog</a>
-          </td>
-          <td>
-            <a href="../../projects">projects</a>
-          </td>
-          <td>
-            <a href="../../about">about</a>
-          </td>
-        </tr>
+          <tr>
+            <td> <a href="../../">HOME</a> </td>
+          </tr>
+          <tr>
+            <td> <a href="../../projects">PROJECTS</a> </td>
+          </tr>
+          <tr>
+            <td> <a href="../../blog/1">BLOG</a> </td>
+          </tr>
+          <tr>
+            <td> <a href="../../archive">ARCHIVE</a> </td>
+          </tr>
+          <tr>
+            <td> <a href="../../about">ABOUT</a> </td>
+          </tr>
         </table>
       </nav>
     </header>
@@ -72,8 +77,11 @@
     -->
 
     <article>
-    <header class="post-header">
-  <h2> How Type Systems Work — Part 1 </h2>
+      <header class="post-header">
+  
+    <h1>How Type Systems Work — Part 1</h1>
+  
+
   <p class="post-info">
     December 13, 2013
   </p>
@@ -172,7 +180,7 @@ nv ::=
 
 <p>The first column defines the syntax of the language in pseudo-BNF notation where <code>e</code> stands for <em>expressions</em>, <code>v</code> for <em>values</em>, and <code>nv</code> for <em>numeric values</em>. Notice that the syntax of expressions does not prevent invalid expressions like <code>succ false</code> or <code>iszero true</code> for example. You might be tempted to replace the <code>e</code> in these syntax rules by <code>nv</code> to avoid this, but that would nonetheless exclude valid expressions that could potentially “evaluate” to a numeric value e.g. <code>succ (pred 0)</code>.</p>
 <p>The second column defines the operational semantics of the language i.e. it’s evaluation rules. The → symbol has nothing to do with implication. It rather represents the <em>small-step evaluation</em> <a href="http://en.wikipedia.org/wiki/Relation_(logic)" target="_blank">relation</a> for language expressions. This relation relates every expression in the language with that which is one step closer to a <em>normal form</em> i.e. a form that cannot be further evaluated. The evaluation relation is defined in terms of <em>inference rules</em>. These rules can be read as follows: <a href="http://en.wikipedia.org/wiki/Proposition" target="_blank">Propositions</a> above the horizontal line are the <em>premises</em>. The proposition below the horizontal line is the <em>conclusion</em>. If an inference rule has no horizontal line, then it has no premises. An inference rule of this form is called an <em>axiom</em>. The first six axioms constitute the <em>computation rules</em> of the language (rules for evaluating simple expressions), while the last four inference rules constitute the <em>congruence rules</em> (rules for simplifying complex expressions).</p>
-<p>Notice that the evaluation rules, as defined here, cannot evaluate any of the invalid expressions mentioned earlier. In this case, evaluation is said to be <em>stuck</em> i.e. the evaluator would simply raise an exception when it sees an expression of this form. Invalid expressions are also called <em>stuck expressions</em> We will see how to handle these cases before evaluation when we start amending the language with a static type system. Stuck expressions are also considered normal forms, since they cannot be further evaluated. That’s why all <em>values</em> (<code>true</code>, <code>false</code>, <code>0</code>, <code>succ nv</code>) are normal forms, but not all normal forms are values.</p>
+<p>Notice that the evaluation rules, as defined here, cannot evaluate any of the invalid expressions mentioned earlier. In this case, evaluation is said to be <em>stuck</em> i.e. the evaluator would simply raise an exception when it sees an expression of this form. Invalid expressions are also called <em>stuck expressions</em>. We will see how to handle these cases before evaluation when we start amending the language with a static type system. Stuck expressions are also considered normal forms, since they cannot be further evaluated. That’s why all <em>values</em> (<code>true</code>, <code>false</code>, <code>0</code>, <code>succ nv</code>) are normal forms, but not all normal forms are values.</p>
 <p>Small-step evaluation may not be the most efficient evaluation strategy, but it’s certainly the simplest, so we’ll go with it.</p>
 <h4 id="evaluator">Evaluator</h4>
 <p>Before implementing the evaluator, it’s worth noting that an evaluator cannot live in isolation. To be able to interact with this evaluator, we need to have a lexer and a parser to parse the language’s source code and generate an <em>abstract syntax tree</em> (AST) which can then be evaluated by the evaluator.</p>
@@ -362,8 +370,8 @@ typeof (<span class="dt">If</span> e1 e2 e3)
 
     </article>
 
-    <aside id="logo">
-      <img src="../../img/logo_small.png" width="150" height="80">
+    <aside id="fractal">
+      <img src="../../img/fractal.png" width="150" height="80">
     </aside>
 
     <!--[if gt IE 7]><!-->
@@ -386,9 +394,9 @@ typeof (<span class="dt">If</span> e1 e2 e3)
       <table>
         <tr>
           <td id="license">
-            Copyright © 2013 - 2014 Haitham Gad
+            © 2013 - 2014 Haitham Gad
           </td>
-          <td id="hakyll" align="right">
+          <td id="hakyll">
             Generated by
             <a target="_blank" href="http://jaspervdj.be/hakyll">Hakyll</a>
           </td>
