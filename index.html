@@ -145,7 +145,7 @@
   <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span>
   <span class="kw">class</span> _iterator(<span class="dt">object</span>):
     <span class="kw">def</span> <span class="ot">__init__</span>(<span class="ot">self</span>, value):
-      <span class="ot">self</span>.counter = -<span class="dv">1</span>
+      <span class="ot">self</span>.counter = <span class="dv">0</span>
       <span class="ot">self</span>.begin = value[<span class="st">&quot;__begin_&quot;</span>]
       <span class="ot">self</span>.end = value[<span class="st">&quot;__end_&quot;</span>]
 
@@ -156,9 +156,10 @@
       <span class="kw">if</span> <span class="ot">self</span>.begin == <span class="ot">self</span>.end:
         <span class="kw">raise</span> <span class="ot">StopIteration</span>
 
+      ret = (<span class="st">&quot;[</span><span class="ot">%d</span><span class="st">]&quot;</span> % <span class="ot">self</span>.counter, <span class="ot">self</span>.begin.dereference())
       <span class="ot">self</span>.begin += <span class="dv">1</span>
       <span class="ot">self</span>.counter += <span class="dv">1</span>
-      <span class="kw">return</span> (<span class="st">&quot;[</span><span class="ot">%d</span><span class="st">]&quot;</span> % <span class="ot">self</span>.counter, <span class="ot">self</span>.begin.dereference())
+      <span class="kw">return</span> ret
 
   <span class="kw">def</span> <span class="ot">__init__</span>(<span class="ot">self</span>, value):
     <span class="ot">self</span>.value = value
@@ -188,14 +189,14 @@
 register_libcxx_printers(gdb)
 end</code></pre>
 <p>Here’s the output from GDB using this pretty printer:</p>
-<pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
+<pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) p v
 <span class="er">$</span><span class="dv">1</span> = {
   &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
-    [<span class="dv">0</span>] = <span class="dv">2</span>,
-    [<span class="dv">1</span>] = <span class="dv">3</span>,
-    [<span class="dv">2</span>] = <span class="dv">4</span>,
-    [<span class="dv">3</span>] = <span class="dv">5</span>,
-    [<span class="dv">4</span>] = <span class="dv">0</span>
+    [<span class="dv">0</span>] = <span class="dv">1</span>,
+    [<span class="dv">1</span>] = <span class="dv">2</span>,
+    [<span class="dv">2</span>] = <span class="dv">3</span>,
+    [<span class="dv">3</span>] = <span class="dv">4</span>,
+    [<span class="dv">4</span>] = <span class="dv">5</span>
   }, &lt;No data fields&gt;}</code></pre>
 <p>At any point, if you need to print the <em>raw</em> version of a vector, you can use the <code>/r</code> switch:</p>
 <pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print /r v
