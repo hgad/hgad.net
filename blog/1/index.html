@@ -91,6 +91,142 @@
 <section class="post-list">
   <header class="post-header">
   
+    <h2 id="post-link"><a href="../../posts/object-inspection-in-gdb/">Object Inspection in GDB</a></h2>
+  
+
+  <p class="post-info">
+    May 24, 2014
+  </p>
+</header>
+
+<section class="post-body">
+  <p>
+  <p>One of the primary needs of a developer, while debugging any code, is to be able to inspect, not only primitive values, but also compound values (like objects). The problem is that objects are usually littered with lots of irrelevant information that obscure the essence of what the developer might be interested in. It becomes even worse when the interesting pieces of an object are in dynamic memory, in which case all you get to see are dumb pointers. Consider the following code:</p>
+<pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="ot">#include &lt;vector&gt;</span>
+
+<span class="dt">int</span> main() {
+  std::vector&lt;<span class="dt">int</span>&gt; v;
+  v.push_back(<span class="dv">1</span>);
+  v.push_back(<span class="dv">2</span>);
+  v.push_back(<span class="dv">3</span>);
+  v.push_back(<span class="dv">4</span>);
+  v.push_back(<span class="dv">5</span>);
+
+  <span class="kw">return</span> <span class="dv">0</span>;
+}</code></pre>
+<p>Here’s the output from GDB when attempting to print <code>v</code> just before returning<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>:</p>
+<pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
+<span class="er">$</span><span class="dv">1</span> = {
+  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
+    &lt;std::__1::__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
+    members of std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;:
+    __begin_ = <span class="bn">0x100103a70</span>,
+    __end_ = <span class="bn">0x100103a84</span>,
+    __end_cap_ = {
+      &lt;std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
+        &lt;std::__1::allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
+        members of std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
+        __first_ = <span class="bn">0x100103a90</span>
+      }, &lt;No data fields&gt;}
+  }, &lt;No data fields&gt;}</code></pre>
+<p>It’s obvious that this output is essentially useless. It’s basically a bunch of memory addresses and obscure data types with absolutely no reference to what the developer is looking for, the entries of the vector!</p>
+<p>GDB solves this problem (and others) by providing a full-fledged <a href="https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html">Python API</a><a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> for interacting with the inferior<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. This API can be used for inspecting all sorts of information about the inferior, including static and dynamic value types, symbols and symbol tables, stack frames and even allows you to evaluate expressions in the inferior language. Moreover, this API has facilities for controlling GDB itself, by defining and executing GDB commands, creating breakpoints and watchpoints, inspecting breakpoint attributes and much more.</p>
+<p>What we care about here is GDB’s <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API</a>. This API enables the creation of custom pretty printers for values of user-defined types. The goal is to allow the developer to use the plain old GDB <code>print</code> command on values of user-defined types and still get to see only the relevant pieces of the printed value.</p>
+<p>GDB’s Python API represents values from the inferior using the <code>gdb.Value</code> class, and represents types using the <code>gdb.Type</code> class. Documentation for these classes can be found <a href="https://sourceware.org/gdb/onlinedocs/gdb/Values-From-Inferior.html">here</a> and <a href="https://sourceware.org/gdb/onlinedocs/gdb/Types-In-Python.html">here</a>.</p>
+<p>To create a pretty printer for a certain type, you need to create a <em>printer</em> class that has at least one method, <code>to_string()</code>, which converts that type to string for printing. If you know that your type represents some sort of an array, list or table, you may also need to add a <code>children()</code> method to your class. This later method must return an object conforming to the Python iterator protocol, where every item returned by that iterator must be a pair of child name and value as you wish to observe them in the output. If the child type also has a printer, GDB will automatically invoke it to print all the children.</p>
+<p>Let’s go ahead and write a pretty printer for <code>libc++</code>’s <code>std::vector</code><a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>:</p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="ch">import</span> gdb
+<span class="ch">import</span> re
+
+<span class="kw">class</span> VectorPrinter(<span class="dt">object</span>):
+  <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span>
+  <span class="kw">class</span> _iterator(<span class="dt">object</span>):
+    <span class="kw">def</span> <span class="ot">__init__</span>(<span class="ot">self</span>, value):
+      <span class="ot">self</span>.counter = -<span class="dv">1</span>
+      <span class="ot">self</span>.begin = value[<span class="st">&quot;__begin_&quot;</span>]
+      <span class="ot">self</span>.end = value[<span class="st">&quot;__end_&quot;</span>]
+
+    <span class="kw">def</span> <span class="ot">__iter__</span>(<span class="ot">self</span>):
+      <span class="kw">return</span> <span class="ot">self</span>
+
+    <span class="kw">def</span> <span class="dt">next</span>(<span class="ot">self</span>):
+      <span class="kw">if</span> <span class="ot">self</span>.begin == <span class="ot">self</span>.end:
+        <span class="kw">raise</span> <span class="ot">StopIteration</span>
+
+      <span class="ot">self</span>.begin += <span class="dv">1</span>
+      <span class="ot">self</span>.counter += <span class="dv">1</span>
+      <span class="kw">return</span> (<span class="st">&quot;[</span><span class="ot">%d</span><span class="st">]&quot;</span> % <span class="ot">self</span>.counter, <span class="ot">self</span>.begin.dereference())
+
+  <span class="kw">def</span> <span class="ot">__init__</span>(<span class="ot">self</span>, value):
+    <span class="ot">self</span>.value = value
+
+  <span class="kw">def</span> to_string(<span class="ot">self</span>):
+    <span class="kw">return</span> <span class="st">&quot;vector&quot;</span>
+
+  <span class="kw">def</span> children(<span class="ot">self</span>):
+    <span class="kw">return</span> <span class="ot">self</span>._iterator(<span class="ot">self</span>.value)</code></pre>
+<p>To activate the pretty printer, we need to define a <em>lookup</em> function for our type and a registration function for our printer(s):</p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> vec_lookup_function(val):
+  lookup_tag = val.<span class="dt">type</span>.tag
+  <span class="kw">if</span> lookup_tag == <span class="ot">None</span>:
+    <span class="kw">return</span> <span class="ot">None</span>
+
+  regex = re.<span class="dt">compile</span>(<span class="st">&quot;^.*vector_base&lt;.*,.*&gt;$&quot;</span>)
+  <span class="kw">if</span> regex.match(lookup_tag):
+    <span class="kw">return</span> VectorPrinter(val)
+
+  <span class="kw">return</span> <span class="ot">None</span>
+
+<span class="kw">def</span> register_libcxx_printers(objfile):
+  objfile.pretty_printers.append(vec_lookup_function)</code></pre>
+<p>Finally, we need to make sure GDB loads this file at startup. To do this, we need to make sure the printer module is in the <code>PYTHONPATH</code> and call the printer registration function in <code>~/.gdbinit</code>:</p>
+<pre class="sourceCode python"><code class="sourceCode python">python
+<span class="ch">from</span> libcxx.printers <span class="ch">import</span> register_libcxx_printers
+register_libcxx_printers(gdb)
+end</code></pre>
+<p>Here’s the output from GDB using this pretty printer:</p>
+<pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
+<span class="er">$</span><span class="dv">1</span> = {
+  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
+    [<span class="dv">0</span>] = <span class="dv">2</span>,
+    [<span class="dv">1</span>] = <span class="dv">3</span>,
+    [<span class="dv">2</span>] = <span class="dv">4</span>,
+    [<span class="dv">3</span>] = <span class="dv">5</span>,
+    [<span class="dv">4</span>] = <span class="dv">0</span>
+  }, &lt;No data fields&gt;}</code></pre>
+<p>At any point, if you need to print the <em>raw</em> version of a vector, you can use the <code>/r</code> switch:</p>
+<pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print /r v
+<span class="er">$</span><span class="dv">2</span> = {
+  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
+    &lt;std::__1::__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
+    members of std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;:
+    __begin_ = <span class="bn">0x100103a70</span>,
+    __end_ = <span class="bn">0x100103a84</span>,
+    __end_cap_ = {
+      &lt;std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
+        &lt;std::__1::allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
+        members of std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
+        __first_ = <span class="bn">0x100103a90</span>
+      }, &lt;No data fields&gt;}
+  }, &lt;No data fields&gt;}</code></pre>
+<p>There are many variations for how to create printers and how to register them, but I wanted to keep things simple in this tutorial. For more information, check out the <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API documentation</a>.</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>I’m using Clang’s <code>libc++</code> standard library here. If you use GCC’s <code>libstdc++</code>, your mileage may vary.<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>GDB has to be configured with <code>--with-python</code> for this to work.<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>The process under debugging.<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p>For <code>libstdc++</code>, you can use any of the tools mentioned <a href="https://sourceware.org/gdb/wiki/STLSupport">here</a>. I should also mention that <a href="http://lldb.llvm.org">LLDB</a> already prints <code>libc++</code>’s STL containers pretty decently. Check it out before rolling out your own GDB printers.<a href="#fnref4">↩</a></p></li>
+</ol>
+</div>
+  </p>
+
+  <p class="tag-list">
+  <strong>Tags:</strong> <a href="../../tags/Debugging/">Debugging</a>, <a href="../../tags/GDB/">GDB</a>, <a href="../../tags/C%2B%2B/">C++</a>, <a href="../../tags/Python/">Python</a>.
+  <p></p>
+</section>
+<header class="post-header">
+  
     <h2 id="post-link"><a href="../../posts/why-start-a-blog/">Why start a blog?</a></h2>
   
 
@@ -108,7 +244,7 @@
   </p>
 
   <p class="tag-list">
-  <strong>Tags:</strong> <a href="../../tags/blogging/">Blogging</a>.
+  <strong>Tags:</strong> <a href="../../tags/blogging/">blogging</a>.
   <p></p>
 </section>
 

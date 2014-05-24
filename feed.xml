@@ -8,8 +8,16 @@
         <name>Haitham Gad</name>
         <email>hgad@hgad.net</email>
     </author>
-    <updated>2013-10-27T00:00:00Z</updated>
+    <updated>2014-05-24T00:00:00Z</updated>
     <entry>
+    <title>Object Inspection in GDB</title>
+    <link href="http://hgad.net/posts/object-inspection-in-gdb/index.html" />
+    <id>http://hgad.net/posts/object-inspection-in-gdb/index.html</id>
+    <published>2014-05-24T00:00:00Z</published>
+    <updated>2014-05-24T00:00:00Z</updated>
+    <summary type="html"><![CDATA[GDB value pretty printing tutorial.]]></summary>
+</entry>
+<entry>
     <title>Why start a blog?</title>
     <link href="http://hgad.net/posts/why-start-a-blog/index.html" />
     <id>http://hgad.net/posts/why-start-a-blog/index.html</id>
