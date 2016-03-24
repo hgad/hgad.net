@@ -100,14 +100,13 @@
 <p>Here is a formal definition of the language’s syntax and operational semantics:</p>
 <table>
 <tr>
-<th> 
+<th>
 Syntax
 </th>
-<th> 
+<th>
 Semantics
 </th>
 </tr>
-
 <tr>
 <td>
 <pre><code>e ::=
@@ -136,45 +135,56 @@ nv ::=
 <p><code>if true then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub> → <code>e</code><sub><code>2</code></sub></p>
 <p><code>if false then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub> → <code>e</code><sub><code>3</code></sub></p>
 <table class="infer">
-<tr><td>
+<tr>
+<td>
 <code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-<tr class="conc"><td>
+</td>
+</tr>
+<tr class="conc">
+<td>
 <code>succ e</code><sub><code>1</code></sub> → <code>succ e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-</table>
-
-<table class="infer">
-<tr><td>
-<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-<tr class="conc"><td>
-<code>pred e</code><sub><code>1</code></sub> → <code>pred e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-</table>
-
-<table class="infer">
-<tr><td>
-<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-<tr class="conc"><td>
-<code>iszero e</code><sub><code>1</code></sub> → <code>iszero e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-</table>
-
-<table class="infer">
-<tr><td>
-<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
-</td></tr>
-<tr class="conc"><td>
-<code>if e</code><sub><code>1</code></sub> <code>then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub> → <code>if e</code><sub><code>1</code></sub><code>' then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub>
-</td></tr>
-</table>
-
 </td>
 </tr>
 </table>
-
+<table class="infer">
+<tr>
+<td>
+<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
+</td>
+</tr>
+<tr class="conc">
+<td>
+<code>pred e</code><sub><code>1</code></sub> → <code>pred e</code><sub><code>1</code></sub><code>'</code>
+</td>
+</tr>
+</table>
+<table class="infer">
+<tr>
+<td>
+<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
+</td>
+</tr>
+<tr class="conc">
+<td>
+<code>iszero e</code><sub><code>1</code></sub> → <code>iszero e</code><sub><code>1</code></sub><code>'</code>
+</td>
+</tr>
+</table>
+<table class="infer">
+<tr>
+<td>
+<code>e</code><sub><code>1</code></sub> → <code>e</code><sub><code>1</code></sub><code>'</code>
+</td>
+</tr>
+<tr class="conc">
+<td>
+<code>if e</code><sub><code>1</code></sub> <code>then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub> → <code>if e</code><sub><code>1</code></sub><code>' then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub>
+</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
 <p>The first column defines the syntax of the language in pseudo-BNF notation where <code>e</code> stands for <em>expressions</em>, <code>v</code> for <em>values</em>, and <code>nv</code> for <em>numeric values</em>. Notice that the syntax of expressions does not prevent invalid expressions like <code>succ false</code> or <code>iszero true</code> for example. You might be tempted to replace the <code>e</code> in these syntax rules by <code>nv</code> to avoid this, but that would nonetheless exclude valid expressions that could potentially “evaluate” to a numeric value e.g. <code>succ (pred 0)</code>.</p>
 <p>The second column defines the operational semantics of the language i.e. it’s evaluation rules. The → symbol has nothing to do with implication. It rather represents the <em>small-step evaluation</em> <a href="http://en.wikipedia.org/wiki/Relation_(logic)" target="_blank">relation</a> for language expressions. This relation relates every expression in the language with that which is one step closer to a <em>normal form</em> i.e. a form that cannot be further evaluated. The evaluation relation is defined in terms of <em>inference rules</em>. These rules can be read as follows: <a href="http://en.wikipedia.org/wiki/Proposition" target="_blank">Propositions</a> above the horizontal line are the <em>premises</em>. The proposition below the horizontal line is the <em>conclusion</em>. If an inference rule has no horizontal line, then it has no premises. An inference rule of this form is called an <em>axiom</em>. The first six axioms constitute the <em>computation rules</em> of the language (rules for evaluating simple expressions), while the last four inference rules constitute the <em>congruence rules</em> (rules for simplifying complex expressions).</p>
 <p>Notice that the evaluation rules, as defined here, cannot evaluate any of the invalid expressions mentioned earlier. In this case, evaluation is said to be <em>stuck</em> i.e. the evaluator would simply raise an exception when it sees an expression of this form. Invalid expressions are also called <em>stuck expressions</em>. We will see how to handle these cases before evaluation when we start amending the language with a static type system. Stuck expressions are also considered normal forms, since they cannot be further evaluated. That’s why all <em>values</em> (<code>true</code>, <code>false</code>, <code>0</code>, <code>succ nv</code>) are normal forms, but not all normal forms are values.</p>
@@ -182,24 +192,24 @@ nv ::=
 <h4 id="evaluator">Evaluator</h4>
 <p>Before implementing the evaluator, it’s worth noting that an evaluator cannot live in isolation. To be able to interact with this evaluator, we need to have a lexer and a parser to parse the language’s source code and generate an <em>abstract syntax tree</em> (AST) which can then be evaluated by the evaluator.</p>
 <p>For now though, we will define the AST and assume it was somehow constructed and passed in to the evaluator. Here is a definition of the AST in Haskell:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span> <span class="fu">=</span> <span class="dt">T</span> <span class="fu">|</span> <span class="dt">F</span> <span class="fu">|</span> <span class="dt">O</span> <span class="fu">|</span> <span class="dt">Succ</span> <span class="dt">Expr</span> <span class="fu">|</span> <span class="dt">Pred</span> <span class="dt">Expr</span> <span class="fu">|</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span> <span class="fu">=</span> <span class="dt">T</span> <span class="fu">|</span> <span class="dt">F</span> <span class="fu">|</span> <span class="dt">O</span> <span class="fu">|</span> <span class="dt">Succ</span> <span class="dt">Expr</span> <span class="fu">|</span> <span class="dt">Pred</span> <span class="dt">Expr</span> <span class="fu">|</span>
             <span class="dt">IsZero</span> <span class="dt">Expr</span> <span class="fu">|</span> <span class="dt">If</span> <span class="dt">Expr</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-            <span class="kw">deriving</span> <span class="dt">Show</span></code></pre>
+            <span class="kw">deriving</span> <span class="dt">Show</span></code></pre></div>
 <p><code>Expr</code> is an <em>algebraic data type</em>, while <code>O</code> (capital Oh, for zero), <code>T</code> (true), <code>F</code> (false), <code>Succ</code>, <code>Pred</code>, <code>IsZero</code> and <code>If</code> are <em>data constructors</em>. <code>Succ</code>, <code>Pred</code> and <code>IsZero</code> require a <code>Expr</code> argument, while <code>If</code> requires three <code>Expr</code>s, namely, the guard expression, the then-branch expression and the else-branch expression respectively. The <code>deriving Show</code> part of the definition tells Haskell to convert these constructors to strings when asked to print a value of type <code>Expr</code>.</p>
 <p>Looking at the operational semantics defined earlier, we can see that the arguments to <code>succ</code>, <code>pred</code> and <code>iszero</code> must eventually evaluate to a numeric value i.e. <code>O</code> or <code>succ nv</code>. This suggests that we need a way distinguish a numeric value from any other form of expression. The following predicate determines whether an expression is a numeric value.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">isNumeric ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">isNumeric ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
 isNumeric <span class="dt">O</span> <span class="fu">=</span> <span class="dt">True</span>
 isNumeric (<span class="dt">Succ</span> nv) <span class="fu">=</span> isNumeric nv
-isNumeric _ <span class="fu">=</span> <span class="dt">False</span></code></pre>
+isNumeric _ <span class="fu">=</span> <span class="dt">False</span></code></pre></div>
 <p>In order to know when to stop evaluation, we also need to know whether an expression has been reduced to a value i.e. when it cannot be further evaluated.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">isValue ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">isValue ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
 isValue <span class="dt">T</span> <span class="fu">=</span> <span class="dt">True</span>
 isValue <span class="dt">F</span> <span class="fu">=</span> <span class="dt">True</span>
 isValue nv
   <span class="fu">|</span> isNumeric nv <span class="fu">=</span> <span class="dt">True</span>
-  <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">False</span></code></pre>
+  <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">False</span></code></pre></div>
 <p>Now we can define the evaluator. Notice that the code closely follows the operational semantics defined earlier.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval1 ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval1 ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span>
 
 <span class="co">-- computation rules</span>
 eval1 (<span class="dt">Pred</span> <span class="dt">O</span>) <span class="fu">=</span> <span class="dt">O</span>
@@ -225,14 +235,14 @@ eval1 _ <span class="fu">=</span> error <span class="st">&quot;Invalid Expressio
 <span class="ot">eval ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span>
 eval e
   <span class="fu">|</span> isValue e <span class="fu">=</span> e
-  <span class="fu">|</span> otherwise <span class="fu">=</span> eval (eval1 e)</code></pre>
+  <span class="fu">|</span> otherwise <span class="fu">=</span> eval (eval1 e)</code></pre></div>
 <p><code>eval1</code> implements the small-step evaluation function, which exactly matches the given definitions. Notice that in case of an invalid expression, it simply raises an error. <code>eval</code> is the evaluator function. If calls <code>eval1</code> successively until the evaluation yields some normal form (a value or an error). Now, let’s give it a try.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> eval (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">O</span>))))
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> eval (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">O</span>))))
 <span class="dt">Succ</span> <span class="dt">O</span>
 <span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> eval (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">F</span>))))
 <span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> <span class="dt">Invalid</span> <span class="dt">Expression</span>
 <span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> eval (<span class="dt">If</span> (<span class="dt">IsZero</span> <span class="dt">O</span>) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">F</span>))))
-<span class="dt">T</span></code></pre>
+<span class="dt">T</span></code></pre></div>
 <p>Notice that even though the last expression has a type error (in the else-branch), it still evaluates normally. This is because, according to our semantics, the else-branch of an <code>If</code> expression is <em>not</em> evaluated if the guard expression evaluates to <code>T</code>. Notice also in the first example that the value of the <code>If</code> expression can potentially be boolean or numeric, depending on the guarding expression. Generally speaking, in untyped languages, we cannot deduce the type of an expression until the expression is evaluated.</p>
 <h3 id="typed-expressions">Typed Expressions</h3>
 <p>The purpose of the type system we’re about to discuss is to make sure expressions can be evaluated before passing them to the evaluator. In other words, we need to rule out stuck expressions. To achieve this, we’ll define a new relation called the <em>typing relation</em>. We use to colon symbol to denote the typing relation i.e. if an expression <code>e</code> <em>has type</em> <code>T</code>, we write <code>e : T</code>. An expression is said to be <em>typable</em> (or <em>well-typed</em>) if it satisfies the typing relation i.e. if there exists a <code>T</code> such that <code>e : T</code>.</p>
@@ -245,10 +255,10 @@ eval e
 <p>Here’s the inference rule definition of the typing relation:</p>
 <table>
 <tr>
-<th> 
+<th>
 Types
 </th>
-<th> 
+<th>
 Typing Relation
 </th>
 </tr>
@@ -263,58 +273,71 @@ Typing Relation
 <p><code>false : Bool</code></p>
 <p><code>0 : Nat</code></p>
 <table class="infer">
-<tr><td>
+<tr>
+<td>
 <code>e</code><sub><code>1</code></sub> <code>: Nat</code>
-</td></tr>
-<tr class="conc"><td>
+</td>
+</tr>
+<tr class="conc">
+<td>
 <code>succ e</code><sub><code>1</code></sub> <code>: Nat</code>
-</td></tr>
-
+</td>
+</tr>
 <table class="infer">
-<tr><td>
+<tr>
+<td>
 <code>e</code><sub><code>1</code></sub> <code>: Nat</code>
-</td></tr>
-<tr class="conc"><td>
+</td>
+</tr>
+<tr class="conc">
+<td>
 <code>pred e</code><sub><code>1</code></sub> <code>: Nat</code>
-</td></tr>
-
+</td>
+</tr>
 <table class="infer">
-<tr><td>
+<tr>
+<td>
 <code>e</code><sub><code>1</code></sub> <code>: Nat</code>
-</td></tr>
-<tr class="conc"><td>
+</td>
+</tr>
+<tr class="conc">
+<td>
 <code>isZero e</code><sub><code>1</code></sub> <code>: Bool</code>
-</td></tr>
-
+</td>
+</tr>
 <table class="infer">
-<tr><td>
+<tr>
+<td>
 <code>e</code><sub><code>1</code></sub> <code>: Bool</code>
-</td><td>
+</td>
+<td>
 <code>e</code><sub><code>2</code></sub> <code>: T</code>
-</td><td>
+</td>
+<td>
 <code>e</code><sub><code>3</code></sub> <code>: T</code>
-</td></tr>
-<tr class="conc"><td colspan="3">
+</td>
+</tr>
+<tr class="conc">
+<td colspan="3">
 <code>if e</code><sub><code>1</code></sub> <code>then e</code><sub><code>2</code></sub> <code>else e</code><sub><code>3</code></sub> <code>: T</code>
-</td></tr>
-</table>
-
 </td>
 </tr>
 </table>
-
+</td>
+</tr>
+</table>
 <p>The first column asserts that the language has only two types, <code>Bool</code> and <code>Nat</code> (for natural numbers). The second column states the inference rules for the typing relation.</p>
 <p>Notice that this definition not only rules out stuck expressions, but it also excludes valid expressions that have non-deterministic types. For example, the last inference rule states that for an <code>if</code> expression to be well-typed, both its <code>then</code> and <code>else</code> branches must have the same type. This omits expressions like: <code>if (isZero 0) then true else (succ 0)</code>, because the two branches have different types, even though such expressions could still be evaluated.</p>
 <p>We’re not going to go through the proof of the progress and preservation properties for our typing relation. It’s listed in detail in the book.</p>
 <h4 id="type-checker">Type Checker</h4>
 <p>In general, typing, as we mentioned, is a relation not a function. This is because in more complicated languages, expressions might have more than one type. For example, in a language that supports sub-typing, an expression may have type <code>Circle</code>, but any <code>Circle</code> is also a <code>Shape</code>. So it’s basically both a <code>Circle</code> and a <code>Shape</code>. In many cases, the type checker chooses the most specific type which is the <code>Circle</code>, but that doesn’t always have to be the case.</p>
 <p>For our tiny expression language though, expressions have just one type. So it’s perfectly safe to think of typing as a function, <code>typeof</code>, from an expression to its type. So first thing we need to define is the set of types supported by the language.</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Type</span> <span class="fu">=</span> <span class="dt">Boolean</span> <span class="fu">|</span> <span class="dt">Nat</span> <span class="fu">|</span> <span class="dt">NoType</span>
-            <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Type</span> <span class="fu">=</span> <span class="dt">Boolean</span> <span class="fu">|</span> <span class="dt">Nat</span> <span class="fu">|</span> <span class="dt">NoType</span>
+            <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>)</code></pre></div>
 <p><code>NoType</code> means that the type checker could not infer the type of a given expression i.e. that the expression is <em>ill-typed</em> according to our definition of the typing relation.</p>
 <p>The <code>deriving (Show, Eq)</code> part tells Haskell to convert the data constructors to strings when asked to print them, and to use the default definition of the <code>==</code> operator with them.</p>
 <p>Next we define the type checker:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">typeof ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">typeof ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
 typeof <span class="dt">T</span> <span class="fu">=</span> <span class="dt">Boolean</span>
 typeof <span class="dt">F</span> <span class="fu">=</span> <span class="dt">Boolean</span>
 typeof <span class="dt">O</span> <span class="fu">=</span> <span class="dt">Nat</span>
@@ -333,9 +356,9 @@ typeof (<span class="dt">IsZero</span> nv1)
 
 typeof (<span class="dt">If</span> e1 e2 e3)
   <span class="fu">|</span> (typeof e1 <span class="fu">==</span> <span class="dt">Boolean</span>) <span class="fu">&amp;&amp;</span> (typeof e2 <span class="fu">==</span> typeof e3) <span class="fu">=</span> typeof e2
-  <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">NoType</span></code></pre>
+  <span class="fu">|</span> otherwise <span class="fu">=</span> <span class="dt">NoType</span></code></pre></div>
 <p>Notice that the type checker implementation also follows the inference rule definition of the typing relation very closely. Now let’s try it out:</p>
-<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> typeof (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">O</span>))))
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> typeof (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">T</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">O</span>))))
 <span class="dt">NoType</span>
 <span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> typeof (<span class="dt">If</span> (<span class="dt">IsZero</span> (<span class="dt">Succ</span> <span class="dt">O</span>)) <span class="dt">O</span> (<span class="dt">Succ</span> (<span class="dt">Pred</span> (<span class="dt">Succ</span> <span class="dt">O</span>))))
 <span class="dt">Nat</span>
@@ -348,7 +371,7 @@ typeof (<span class="dt">If</span> e1 e2 e3)
 <span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> typeof (<span class="dt">Pred</span> <span class="dt">O</span>)
 <span class="dt">Nat</span>
 <span class="fu">*</span><span class="dt">Main</span><span class="fu">&gt;</span> typeof (<span class="dt">Pred</span> <span class="dt">F</span>)
-<span class="dt">NoType</span></code></pre>
+<span class="dt">NoType</span></code></pre></div>
 <p>Notice that the first expression was perfectly valid in the untyped version of the language, but now that we chose to elide this case in our typing relation, this expression is considered ill-typed.</p>
 <h3 id="conclusion">Conclusion</h3>
 <p>We saw how to implement an evaluator and a type checker for our tiny expression language, and how a type checker can be a useful tool for eliminating certain kinds of errors. We also saw how to define the evaluation and typing relations of our language in terms of inference rules, and what properties the typing relation needs to satisfy for the language to be type-safe.</p>
@@ -391,7 +414,7 @@ typeof (<span class="dt">If</span> e1 e2 e3)
       <table>
         <tr>
           <td id="license">
-            © 2014 Haitham Gad
+            &copy; 2014 Haitham Gad
           </td>
           <td id="hakyll">
             Generated by
