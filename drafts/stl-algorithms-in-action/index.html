@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>STL Algorithms in Action</title>
+    <meta name="description" content="Demonstrating the versatility of STL algorithms by implementing famous sorting algorithms in terms of STL algorithms.">
+    <meta name="viewport" content="width=device-width">
+
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <link rel="shortcut icon" type="image/png" href="../../img/favicon.png">
+    <link rel="stylesheet" type="text/css" href="../../css/normalize.css">
+    <link rel="stylesheet" type="text/css" media="screen and (min-device-width: 2048px)" href="../../css/style.css">
+    <link rel="stylesheet" type="text/css" media="screen and (max-device-width: 2048px)" href="../../css/mobile.css">
+    <link rel="stylesheet" type="text/css" href="../../css/font-awesome.min.css">
+
+    <script src="../../js/vendor/modernizr-2.6.2.min.js"></script>
+
+    <script type="text/javascript" src="https://c328740.ssl.cf1.rackcdn.com/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+  </head>
+  <body>
+    <!--[if lt IE 7]>
+      <p class="browsehappy">
+        You are using an <strong>outdated</strong> browser. Please
+        <a href="http://browsehappy.com/">upgrade your browser</a>
+        to improve your experience.
+      </p>
+    <![endif]-->
+
+    <!-- Add your site or application content here -->
+    <header>
+      <nav>
+        <a href="../../">
+          <img id="lambda" src="../../img/lambda.png" width="150" height="100">
+        </a>
+
+        <hr>
+
+        <table>
+          <tr>
+            <td> <a href="../../blog/1">BLOG</a> </td>
+          </tr>
+          <!--
+          <tr>
+            <td> <a href="/projects">PROJECTS</a> </td>
+          </tr>
+          -->
+          <tr>
+            <td> <a href="../../archive">ARCHIVE</a> </td>
+          </tr>
+          <tr>
+            <td> <a href="../../about">ABOUT</a> </td>
+          </tr>
+        </table>
+      </nav>
+    </header>
+
+    <!--
+    <div class="gcse-searchbar">
+      <script>
+        (function() {
+          var cx = '013374158812828085901:lnaifgecssc';
+          var gcse = document.createElement('script');
+          gcse.type = 'text/javascript';
+          gcse.async = true;
+          gcse.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') +
+              '//www.google.com/cse/cse.js?cx=' + cx;
+          var s = document.getElementsByTagName('script')[0];
+          s.parentNode.insertBefore(gcse, s);
+        })();
+      </script>
+      <gcse:search></gcse:search>
+    </div>
+    -->
+
+    <article>
+      <header class="post-header">
+  
+    <h1>STL Algorithms in Action</h1>
+  
+
+  <p class="post-info">
+    March 25, 2016
+  </p>
+</header>
+
+<section class="post-body">
+  <p>
+  <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the Standard Library algorithms and settle for rather suboptimal handcrafted solutions that get the job done. I know this, because I myself have done it more than I’d care to admit. The excuse is usually that the problem does not fit any of these neat, but somewhat detached, algorithms.</p>
+<p>STL algorithms are actually very handy. They turn common —often cryptic— raw loops into <em>named</em> function calls that convey the programmer’s intent in a succinct way. Until recently, however, they required too much work to be able to deploy effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
+<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, mergesort and quicksort) using STL algorithms as building blocks<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
+<h3 id="insertion-sort">Insertion Sort</h3>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Obviously, I won’t be using <code>std::sort()</code> :)<a href="#fnref1">↩</a></p></li>
+</ol>
+</div>
+  </p>
+
+  <p class="tag-list">
+  <strong>Tags:</strong> .
+  <p></p>
+</section>
+
+
+      <aside id="fractal">
+        <img src="../../img/fractal.png" width="150" height="80">
+      </aside>
+
+      <!--[if gt IE 7]><!-->
+      <aside id="socialbar">
+        <section>
+          <a href="http://google.com/+HaithamGad" target="_blank" title="Google+">
+            <i class="fa fa-google-plus-box"></i></a>
+          <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
+            <i class="fa fa-twitter-box"></i></a>
+          <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-box"></i></a>
+          <a href="https://github.com/hgad" target="_blank" title="GitHub">
+            <i class="fa fa-github-box"></i></a>
+          <a href="../../feed.xml" title="Feed">
+            <i class="fa fa-rss-box"></i></a>
+        </section>
+      </aside>
+      <!--<![endif]-->
+    </article>
+
+    <footer>
+      <table>
+        <tr>
+          <td id="license">
+            &copy; 2014 Haitham Gad
+          </td>
+          <td id="hakyll">
+            Generated by
+            <a target="_blank" href="http://jaspervdj.be/hakyll">Hakyll</a>
+          </td>
+        </tr>
+      </table>
+    </footer>
+
+    <script src="../../js/vendor/jquery-1.10.2.min.js">
+    </script>
+
+    <script src="../../js/plugins.js"></script>
+    <script src="../../js/main.js"></script>
+
+    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-45318006-1', 'hgad.net');
+      ga('send', 'pageview');
+
+    </script>
+  </body>
+</html>
+
