@@ -101,6 +101,51 @@
 <section class="post-list">
   <header class="post-header">
   
+    <h2 id="post-link"><a href="./posts/stl-algorithms-in-action/">STL Algorithms in Action</a></h2>
+  
+
+  <p class="post-info">
+    March 25, 2016
+  </p>
+</header>
+
+<section class="post-body">
+  <p>
+  <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the Standard Library algorithms and settle for rather suboptimal handcrafted solutions that get the job done. I know this, because I myself have done it more than I’d care to admit. The excuse is usually that the problem does not fit any of these neat, but somewhat detached, algorithms.</p>
+<p>STL algorithms are actually very handy. They turn common (and often cryptic) raw loops into <em>named</em><a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> constructs that convey the programmer’s intent in a succinct way. Until recently, however, they required too much work to deploy effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
+<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, mergesort and quicksort) using STL algorithms as building blocks<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
+<h3 id="insertion-sort">Insertion Sort</h3>
+<p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">for</span> (<span class="kw">auto</span> j = next(first); j != last; ++j) {
+    <span class="kw">auto</span> key = *j;
+    <span class="kw">auto</span> i = prev(j);
+    <span class="kw">while</span> (i != first &amp;&amp; *i &gt; key) {
+      *next(i) = *i;
+      --i;
+    }
+
+    *next(i) = key;
+  }
+}</code></pre></div>
+<p>It’s compact and generic, but if it weren’t for the function name, it’s completely unobvious what the loop is supposed to be doing.</p>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>``One thing every sorcerer will tell you is if you have the name of a spirit, you have power over it.’’ —Gerald Jay Sussman<a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p>You bet I won’t be using <code>std::sort()</code> ☺<a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p>Introduction to Algorithms, by Cormen et al.<a href="#fnref3">↩</a></p></li>
+</ol>
+</div>
+  </p>
+
+  <p class="tag-list">
+  <strong>Tags:</strong> <a href="./tags/C%2B%2B/">C++</a>, <a href="./tags/STL/">STL</a>, <a href="./tags/Algorithms/">Algorithms</a>.
+  <p></p>
+</section>
+<header class="post-header">
+  
     <h2 id="post-link"><a href="./posts/object-inspection-in-gdb/">Object Inspection in GDB</a></h2>
   
 
