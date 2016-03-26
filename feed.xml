@@ -8,8 +8,16 @@
         <name>Haitham Gad</name>
         <email>hgad@hgad.net</email>
     </author>
-    <updated>2014-05-24T00:00:00Z</updated>
+    <updated>2016-03-25T00:00:00Z</updated>
     <entry>
+    <title>STL Algorithms in Action</title>
+    <link href="http://hgad.net/posts/stl-algorithms-in-action/index.html" />
+    <id>http://hgad.net/posts/stl-algorithms-in-action/index.html</id>
+    <published>2016-03-25T00:00:00Z</published>
+    <updated>2016-03-25T00:00:00Z</updated>
+    <summary type="html"><![CDATA[Demonstrating the versatility of STL algorithms by implementing famous sorting algorithms in terms of STL algorithms.]]></summary>
+</entry>
+<entry>
     <title>Object Inspection in GDB</title>
     <link href="http://hgad.net/posts/object-inspection-in-gdb/index.html" />
     <id>http://hgad.net/posts/object-inspection-in-gdb/index.html</id>
