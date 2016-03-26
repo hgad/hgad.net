@@ -42,9 +42,11 @@
           <tr>
             <td> <a href="./blog/1">BLOG</a> </td>
           </tr>
+          <!--
           <tr>
-            <td> <a href="./projects">PROJECTS</a> </td>
+            <td> <a href="/projects">PROJECTS</a> </td>
           </tr>
+          -->
           <tr>
             <td> <a href="./archive">ARCHIVE</a> </td>
           </tr>
@@ -74,50 +76,25 @@
     -->
 
     <article>
-      <header>
+      <!--
+<header>
   <h1>Welcome</h1>
 </header>
 
 <section>
   <p>
   ... to my personal website, a place where I share my
-  <a href="./blog/1">thoughts and insights</a> on programming and other topics,
-  along with updates on my latest <a href="./projects">activities and projects</a>.
-  Check out my <a href="./blog/1">recent blog posts</a> or use the navigation
+  <a href="/blog/1">thoughts and insights</a> on programming and other topics,
+  along with updates on my latest
+  <a href="/projects">activities and projects</a>.
+  Check out my <a href="/blog/1">recent blog posts</a> or use the navigation
   menu to navigate the website.
   </p>
 </section>
+-->
 
 <section class="post-list">
   <header class="post-header">
-  
-    <h2 id="post-link"><a href="./posts/stl-algorithms-in-action/">STL Algorithms in Action</a></h2>
-  
-
-  <p class="post-info">
-    March 25, 2016
-  </p>
-</header>
-
-<section class="post-body">
-  <p>
-  <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the Standard Library algorithms and settle for rather suboptimal handcrafted solutions that get the job done. I know this, because I myself have done it more than I’d care to admit. The excuse is usually that the problem does not fit any of these neat, but somewhat detached, algorithms.</p>
-<p>STL algorithms are actually very handy. They turn common —often cryptic— raw loops into <em>named</em> function calls that convey the programmer’s intent in a succinct way. Until recently, however, they required too much work to be able to deploy effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
-<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, mergesort and quicksort) using STL algorithms as building blocks<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
-<h3 id="insertion-sort">Insertion Sort</h3>
-<div class="footnotes">
-<hr />
-<ol>
-<li id="fn1"><p>Obviously, I won’t be using <code>std::sort()</code> :)<a href="#fnref1">↩</a></p></li>
-</ol>
-</div>
-  </p>
-
-  <p class="tag-list">
-  <strong>Tags:</strong> <a href="./tags/c%2B%2B/">c++</a>, <a href="./tags/stl/">stl</a>, <a href="./tags/algorithms/">algorithms</a>.
-  <p></p>
-</section>
-<header class="post-header">
   
     <h2 id="post-link"><a href="./posts/object-inspection-in-gdb/">Object Inspection in GDB</a></h2>
   
@@ -271,27 +248,27 @@ end</code></pre></div>
 </section>
 
 
+
+      <aside id="fractal">
+        <img src="./img/fractal.png" width="150" height="80">
+      </aside>
+
+      <!--[if gt IE 7]><!-->
+      <aside id="socialbar">
+        <section>
+          <a href="http://google.com/+HaithamGad" target="_blank" title="Google+">
+            <i class="fa fa-google-plus-box"></i></a>
+          <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
+            <i class="fa fa-twitter-box"></i></a>
+          <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-box"></i></a>
+          <a href="https://github.com/hgad" target="_blank" title="GitHub">
+            <i class="fa fa-github-box"></i></a>
+          <a href="./feed.xml" title="Feed">
+            <i class="fa fa-rss-box"></i></a>
+        </section>
+      </aside>
+      <!--<![endif]-->
     </article>
-
-    <aside id="fractal">
-      <img src="./img/fractal.png" width="150" height="80">
-    </aside>
-
-    <!--[if gt IE 7]><!-->
-    <aside id="socialbar">
-      <section>
-        <a href="http://google.com/+HaithamGad" target="_blank" title="Google+">
-          <i class="fa fa-google-plus-box"></i></a>
-        <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
-          <i class="fa fa-twitter-box"></i></a>
-        <a href="http://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-box"></i></a>
-        <a href="https://github.com/hgad" target="_blank" title="GitHub">
-          <i class="fa fa-github-box"></i></a>
-        <a href="./feed.xml" title="Feed">
-          <i class="fa fa-rss-box"></i></a>
-      </section>
-    </aside>
-    <!--<![endif]-->
 
     <footer>
       <table>
