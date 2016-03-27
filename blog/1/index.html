@@ -106,16 +106,16 @@
 <section class="post-body">
   <p>
   <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the Standard Library algorithms and settle for rather suboptimal handcrafted solutions that get the job done. I know this, because I myself have done it more than I’d care to admit. The excuse is usually that the problem does not fit any of these neat, but somewhat detached, algorithms.</p>
-<p>STL algorithms are actually very handy. They turn common (and often cryptic) raw loops into <em>named</em><a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a> constructs that convey the programmer’s intent in a succinct way. Until recently, however, they required too much work to deploy effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
-<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, mergesort and quicksort) using STL algorithms as building blocks<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
+<p>STL algorithms are actually very handy. They give names to commonly occurring (and often cryptic) raw loops<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. Until recently, however, they required too much work to use effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
+<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, merge sort and quicksort) using STL algorithms as building blocks<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
 <h3 id="insertion-sort">Insertion Sort</h3>
 <p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">for</span> (<span class="kw">auto</span> j = next(first); j != last; ++j) {
+<span class="dt">void</span> insertion_sort1(I first, I last) {
+  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; j = next(first); j != last; ++j) {
     <span class="kw">auto</span> key = *j;
-    <span class="kw">auto</span> i = prev(j);
-    <span class="kw">while</span> (i != first &amp;&amp; *i &gt; key) {
+    <span class="kw">auto</span>&amp;&amp; i = prev(j);
+    <span class="kw">while</span> (i != prev(first) &amp;&amp; *i &gt; key) {
       *next(i) = *i;
       --i;
     }
@@ -123,13 +123,50 @@
     *next(i) = key;
   }
 }</code></pre></div>
-<p>It’s compact and generic, but if it weren’t for the function name, it’s completely unobvious what the loop is supposed to be doing.</p>
+<p>It’s compact and generic, but aside from the function name, it’s completely unobvious what the nested loops are doing at first sight. Let’s see how to make this more readable.</p>
+<p>By examining the inner loop, it looks like it searches backwards in the given range for a value less than or equal to <code>key</code>. It starts from the value just before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one position to the right. Once the value is found (or we reach the beginning of the range), the value at <code>j</code> is then inserted.</p>
+<p>Let’s pretend for a moment that the range is being scanned in the forward rather than the backward direction. In this case, all we need is a function that searches a range for an element (call it <code>k</code>) that satisfies a certain predicate. When <code>k</code> is found (or we reach the end of the range), the function has to insert the first element of the range before <code>k</code> and shift all elements between them one position to the left:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
+<span class="dt">void</span> insert_first_before(I first, I last, P pred) {
+  <span class="kw">auto</span>&amp;&amp; second = next(first);
+  rotate(first, second, find_if(second, last, pred));
+}</code></pre></div>
+<p>If you’re surprised to see <code>rotate()</code> being used here, you’re not alone. Sean Parent’s GoingNative 2013 <a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in this respect. Turns out <code>rotate()</code> is one of the handiest algorithms in the Standard Library. Essentially, any time you find yourself manually shifting elements, there’s almost always a better way to achieve the same effect using <code>rotate()</code><a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>.</p>
+<p>Going back to our problem, what we originally needed was an algorithm that scans a range in the backward direction not the forward direction. But do we really need that? In fact we don’t. The range we’re searching through (from <code>first</code> to <code>j</code>) is guaranteed to be sorted, so theoretically, we don’t even need to do a linear search at all. Binary search would do the trick, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved using <code>upper_bound()</code> and <code>reverse_iterator</code>s:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
+    rotate(
+      make_reverse_iterator(next(iter)),
+      make_reverse_iterator(iter),
+      make_reverse_iterator(upper_bound(first, iter, *iter)));
+  }
+}</code></pre></div>
+<p>Notice that the first <code>reverse_iterator</code> is set to <code>next(iter)</code> not <code>iter</code>. That’s because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with. The same reasoning applies to the other two <code>reverse_iterator</code>s.</p>
+<p>But suppose we wanted to mimic the raw-loop solution instruction-by-instruction. It’s still easy to achieve this. Now that we have <code>insert_first_before()</code>, the reverse linear search can be easily implemented using <code>reverse_iterator</code>s as well:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
+<span class="dt">void</span> insert_last_after(I first, I last, P pred) {
+  insert_first_before(
+    make_reverse_iterator(last),
+    make_reverse_iterator(first), pred);
+}</code></pre></div>
+<p>You may notice that the function name isn’t ideal. <code>last</code> in the function name refers to the last element in the range, while the <code>last</code> formal parameter refers to the element one past the end of the range.</p>
+<p>In any case, given <code>insert_last_after()</code>, The <em>O(n<sup>2</sup>)</em> version of <code>insertion_sort()</code> becomes trivial:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
+    insert_last_after(first, next(iter),
+      [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="kw">return</span> value &lt;= *iter; });
+  }
+}</code></pre></div>
+<h3 id="merge-sort">Merge Sort</h3>
 <div class="footnotes">
 <hr />
 <ol>
 <li id="fn1"><p>``One thing every sorcerer will tell you is if you have the name of a spirit, you have power over it.’’ —Gerald Jay Sussman<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>You bet I won’t be using <code>std::sort()</code> ☺<a href="#fnref2">↩</a></p></li>
+<li id="fn2"><p>Obviously I won’t be using <code>std::sort()</code>!<a href="#fnref2">↩</a></p></li>
 <li id="fn3"><p>Introduction to Algorithms, by Cormen et al.<a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p><code>rotate()</code> can be implemented in <em>O(n)</em> time using three <code>reverse()</code>s. In fact, this implementation results in a number of swaps almost exactly equals to <em>n</em>.<a href="#fnref4">↩</a></p></li>
 </ol>
 </div>
   </p>
