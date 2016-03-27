@@ -129,7 +129,7 @@
     *next(i) = key;
   }
 }</code></pre></div>
-<p>It’s compact and generic, but aside from the function name, it’s completely unobvious what the nested loops are doing at first sight. Let’s see how to make this more readable.</p>
+<p>It’s compact and generic, but aside from the function name, it’s completely non-obvious what the nested loops are doing at first sight. Let’s see how to make this more readable.</p>
 <p>By examining the inner loop, it looks like it searches backwards in the given range for a value less than or equal to <code>key</code>. It starts from the value just before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one position to the right. Once the value is found (or we reach the beginning of the range), the value at <code>j</code> is then inserted.</p>
 <p>Let’s pretend for a moment that the range is being scanned in the forward rather than the backward direction. In this case, all we need is a function that searches a range for an element (call it <code>k</code>) that satisfies a certain predicate. When <code>k</code> is found (or we reach the end of the range), the function has to insert the first element of the range before <code>k</code> and shift all elements between them one position to the left:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
@@ -163,7 +163,7 @@ I rotate_right(I first, I middle, I last) {
            make_reverse_iterator(middle),
            make_reverse_iterator(first)).base();
 }</code></pre></div>
-<p><code>rotate()</code> returns an iterator of the same type as its arguments, which in this case are <code>reverse_iterator</code>s. For consistency’s sake, <code>rotate_right()</code> should behave similarly by returning an iterator of the same type as its arugments. That’s the reason I’m calling <code>base()</code> on <code>rotate()</code>’s return iterator to extract its <em>base iterator</em> (i.e. the forward iterator its wrapping).</p>
+<p><code>rotate()</code> returns an iterator of the same type as its arguments, which in this case are <code>reverse_iterator</code>s. For consistency’s sake, <code>rotate_right()</code> should behave similarly by returning an iterator of the same type as its arguments. That’s the reason I’m calling <code>base()</code> on <code>rotate()</code>’s return iterator to extract its <em>base iterator</em> (i.e. the forward iterator its wrapping).</p>
 <p>The <em>O(n log n)</em> <code>insertion_sort()</code> follows directly:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
@@ -174,7 +174,7 @@ I rotate_right(I first, I middle, I last) {
 }</code></pre></div>
 <p><code>upper_bound()</code> returns the first element in a range that compares greater than a look-up key (or <code>last</code> if no such element exists). It does that in <em>O(log n)</em> time by requiring the range to be sorted or at least partitioned around the look-up key.</p>
 <h3 id="in-place-merge-sort">In-Place Merge Sort</h3>
-<p>The canonical implementation of merge sort partitions the given range in half and recursively sorts each half, but it performs the merge step in a separate range from that of the two partitions. In-place merge sort, on the other hand, performs the merge step in-place. The two partitions are kept adjacent in memory constituting one big range. The two elements at the beginning of each partition are compared and the smallest is moved to the beginning of the combined range shifting elements as necessary.</p>
+<p>The canonical implementation of merge sort partitions the given range in half and recursively sorts each partition. It then performs the merge step in a separate range from those of the two partitions. In-place merge sort, on the other hand, performs the merge step in-place. The two partitions are kept adjacent in memory constituting one big range. The two elements at the beginning of each partition are compared and the smallest is moved to the beginning of the combined range shifting elements to the right as necessary.</p>
 <p>Following is the top-level <code>mergesort()</code> procedure:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> mergesort(I first, I last) {
@@ -189,7 +189,7 @@ I rotate_right(I first, I middle, I last) {
   mergesort(mid, last);
   merge(first, mid, last);
 }</code></pre></div>
-<p>As described, unless the given range has only one element, <code>mergesort()</code> partitions the given range in half and recursively sorts each half. Finally, it calls the in-place <code>merge()</code> procedure to merge the two sorted partitions. The two partitions are adjacent in memory with iterator <code>mid</code> pointing at the beginning of the second partition.</p>
+<p>As described, unless the given range has only one element, <code>mergesort()</code> partitions the given range in half and recursively sorts each partition. It finally calls the in-place <code>merge()</code> procedure to merge the two sorted partitions. The two partitions are adjacent in memory with iterator <code>mid</code> pointing at the beginning of the second partition.</p>
 <p>Here’s one way to implement the in-place <code>merge()</code> procedure:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> merge(I first, I mid, I last) {
@@ -208,6 +208,69 @@ I rotate_right(I first, I middle, I last) {
 </ol>
 <p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!</p>
 <h3 id="randomized-quicksort">Randomized Quicksort</h3>
+<p>Quicksort is by far the most widely used sorting algorithm. Even though its worst case running time is <em>O(n<sup>2</sup>)</em>, its expected running time is <em>O(n log n)</em>. It works by partitioning the given range around some pivot chosen from the range (usually the first element). It then recursively partitions the two resulting ranges until the original range is fully sorted. The choice of a pivot from a fixed location every time is known to degrade the algorithm’s performance to its worst case when the input range is originally sorted (forwards or backwards). A common way to mitigate this effect is to choose the pivot randomly among the range elements every time. This last variation is commonly known as randomized quicksort.</p>
+<p>Another important aspect about quicksort is that it doesn’t guarantee the stability of the resulting range unless the partitioning algorithm is stable. This means that equivalent elements might not end up sorted in the same order they used to be in originally. That’s okay for primitive types, but it’s not always okay for composite types.</p>
+<p>Stable partitioning is typically more expensive and is not always needed, so it would be nice to have two versions of <code>quicksort()</code>: a stable and an unstable version. This suggests that the partitioning algorithm should be a parameter to <code>quicksort()</code>, but that would make the interface very inconvenient to use. Luckily, we can hide these petty details behind good looking interfaces:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> quicksort(I first, I last) {
+  <span class="kw">auto</span>&amp;&amp; engine = std::default_random_engine(
+    std::chrono::system_clock::now().time_since_epoch().count());
+
+  quicksort_impl(first, last, move(engine),
+    std::partition&lt;I, std::function&lt;<span class="dt">bool</span>(<span class="kw">decltype</span>(*first))&gt;&gt;);
+}
+
+<span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> stable_quicksort(I first, I last) {
+  <span class="kw">auto</span>&amp;&amp; engine = std::default_random_engine(
+    std::chrono::system_clock::now().time_since_epoch().count());
+
+  quicksort_impl(first, last, move(engine),
+    std::stable_partition&lt;I, std::function&lt;<span class="dt">bool</span>(<span class="kw">decltype</span>(*first))&gt;&gt;);
+}</code></pre></div>
+<p>Both functions initialize a random number generation engine from a unique seed (the current time) and pass it along with the right partitioning algorithm to <code>quicksort_impl()</code> which does the real work.</p>
+<p>Both <code>std::partition</code> and <code>std::stable_partition</code> take a range and a unary predicate. They partition the range in-place into two ranges such that every element that satisfies the predicate ends up in the first range and every element that doesn’t satisfy the predicate ends up in the second range. They both return an iterator to the beginning of the second range. Obviously, <code>std::stable_partition</code> does this in a stable manner!</p>
+<p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could directly be used as partition procedures for quicksort, but that’s not possible. Quicksort partitioning requires that the pivot be chosen from the given range and that it ends up exactly between the two resulting ranges. STL partitioning algorithms do not require that and do not guarantee that the pivot will end up between the two partitions, even if it exists in the range.</p>
+<p>Consider the following range:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">10</span>, <span class="dv">7</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
+<p>Here’s a perfectly valid partitioning using a “less-than 9” predicate:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">7</span>, <span class="dv">10</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
+<p>The algorithm would return an iterator to <code>10</code>. Every element before this iterator satisfies the predicate and every element starting at that iterator does not satisfy the predicate. Even though <code>9</code> is in the range, it’s not required to end up between the two partitions.</p>
+<p>So it looks like we need to implement a partitioning function that takes one of the STL’s partitioning algorithms as argument along with the pivot offset and performs partitioning as required by the quicksort algorithm:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S, <span class="kw">typename</span> F&gt;
+I quicksort_partition(I first, I last, S offset, F partition) {
+  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; distance(first, last));
+
+  iter_swap(first, next(first, offset));
+  <span class="kw">auto</span>&amp;&amp; ret =
+    prev(partition(next(first), last,
+           [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="kw">return</span> val &lt; *first; }));
+  iter_swap(first, ret);
+
+  <span class="kw">return</span> ret;
+}</code></pre></div>
+<p>The implementation is simple. <code>quicksort_partition()</code> swaps the pivot with first element of the range, performs partitioning over the full range excluding the pivot, swaps the pivot back with the last element in the first range and returns an iterator to that location.</p>
+<p><code>iter_swap()</code> swaps range elements by iterators rather than references.</p>
+<p>The remaining piece now is <code>quicksort_impl()</code>:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> E, <span class="kw">typename</span> F&gt;
+<span class="dt">void</span> quicksort_impl(I first, I last, E&amp;&amp; engine, F partition) {
+  <span class="kw">auto</span> size = distance(first, last);
+  <span class="kw">if</span> (size &lt; <span class="dv">2</span>) {
+    <span class="kw">return</span>;
+  }
+
+  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
+    distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
+
+  <span class="kw">auto</span> mid = quicksort_partition(first, last,
+               distribution(engine), partition);
+
+  quicksort_impl(first, mid, engine, partition);
+  quicksort_impl(next(mid), last, engine, partition);
+}</code></pre></div>
+<p>It simply takes the random number generation engine and partitioning algorithm from the convenience wrappers, generates a uniformly distributed random index in the given range and passes it as a pivot offset along with the partitioning algorithm to <code>quicksort_partition()</code>. It gets back an iterator to the middle of the partitioned range and recursively sorts the resulting two partitions.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>We saw variations of three common sorting algorithms implemented generically and compactly using STL algorithms. In general, STL algorithms are more applicable than they look. The key to utilizing them is to always ask whether the raw loop I’m about to write (or the one I’m reading) can be replaced by a packaged STL algorithm. You’d be surprised how many times this question can be answered affirmatively.</p>
 <div class="footnotes">
 <hr />
 <ol>
