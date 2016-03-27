@@ -137,27 +137,16 @@
   <span class="kw">auto</span>&amp;&amp; second = next(first);
   rotate(first, second, find_if(second, last, pred));
 }</code></pre></div>
-<p>If you’re surprised to see <code>rotate()</code> being used here, you’re not alone. Sean Parent’s GoingNative 2013 <a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in this respect. Turns out <code>rotate()</code> is one of the handiest algorithms in the Standard Library. It takes three iterators: <code>first</code>, <code>middle</code> and <code>last</code>. It performs a left-rotate operation such that the elements between <code>middle</code> and <code>last</code> are moved to the beginning of the range, and the elements between <code>first</code> and <code>middle</code> are moved to the end of the range. It also returns an iterator to the beginning of the second range after rotation, which often comes in handy as we will see later<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Essentially, every time you find yourself manually shifting elements, there’s almost always a better way to achieve the same effect using <code>rotate()</code><a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>.</p>
-<p>Going back to our problem, what we originally needed was an algorithm that scans a range backwards not forwards. But do we really need that? In fact we don’t. The range we’re searching through (from <code>first</code> to <code>j</code>) is guaranteed to be sorted, so theoretically, we don’t even need to do a linear search at all. Binary search would do the trick, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved using <code>upper_bound()</code> and <code>reverse_iterator</code>s:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
-    rotate(
-      make_reverse_iterator(next(iter)),
-      make_reverse_iterator(iter),
-      make_reverse_iterator(upper_bound(first, iter, *iter)));
-  }
-}</code></pre></div>
-<p>Notice that the first <code>reverse_iterator</code> is set to <code>next(iter)</code> not <code>iter</code>. That’s because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with. The same reasoning applies to the other two <code>reverse_iterator</code>s.</p>
-<p>But suppose we wanted to mimic the raw-loop solution instruction-by-instruction. It’s still easy to achieve this. Now that we have <code>insert_first_before()</code>, the reverse linear search can be easily implemented using <code>reverse_iterator</code>s as well:</p>
+<p>If you’re surprised to see <code>rotate()</code> being used here, you’re not alone. Sean Parent’s GoingNative 2013 <a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in this respect. Turns out <code>rotate()</code> is one of the handiest algorithms in the Standard Library. It takes three iterators: <code>first</code>, <code>middle</code> and <code>last</code>. It performs a left-rotate operation such that the elements between <code>middle</code> and <code>last</code> are moved to the beginning of the range, and the elements between <code>first</code> and <code>middle</code> are moved to the end of the range. It also returns an iterator to the beginning of the second range after rotation, which often comes in handy<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Essentially, every time you find yourself manually shifting elements, there’s almost always a better way to achieve the same effect using <code>rotate()</code><a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>.</p>
+<p>Going back to our problem, what we originally needed was an algorithm that scans a range backwards not forwards. This can be achieved easily using <code>reverse_iterator</code>s:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
 <span class="dt">void</span> insert_last_after(I first, I last, P pred) {
   insert_first_before(
     make_reverse_iterator(last),
     make_reverse_iterator(first), pred);
 }</code></pre></div>
-<p>You may notice that the function name isn’t ideal. <code>last</code> in the function name refers to the last element in the range, while <code>last</code>, the formal parameter, refers to the element one past the end of the range.</p>
-<p>In any case, given <code>insert_last_after()</code>, The <em>O(n<sup>2</sup>)</em> version of <code>insertion_sort()</code> becomes trivial:</p>
+<p>You may notice that the function name isn’t ideal. The word <code>last</code> in the function name refers to the last element in the range, while <code>last</code> the formal parameter, refers to the element one past the end of the range.</p>
+<p>In any case, given <code>insert_last_after()</code>, <code>insertion_sort()</code> becomes trivial:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
   <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
@@ -165,7 +154,60 @@
       [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="kw">return</span> value &lt;= *iter; });
   }
 }</code></pre></div>
+<p>Notice that the arguments to <code>insert_last_after()</code> are initialized with iterators one position to the right of where the <code>reverse_iterator</code>s are supposed to point. This is because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with.</p>
+<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved directly using <code>upper_bound()</code>. Once that element is found, we need to perform a right rotate to insert the element at <code>iter</code> before it. A right rotate can be implemented using <code>rotate()</code> with <code>reverse_iterator</code>s:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+I rotate_right(I first, I middle, I last) {
+  <span class="kw">return</span> rotate(
+           make_reverse_iterator(last),
+           make_reverse_iterator(middle),
+           make_reverse_iterator(first)).base();
+}</code></pre></div>
+<p><code>rotate()</code> returns an iterator of the same type as its arguments, which in this case are <code>reverse_iterator</code>s. For consistency’s sake, <code>rotate_right()</code> should behave similarly by returning an iterator of the same type as its arugments. That’s the reason I’m calling <code>base()</code> on <code>rotate()</code>’s return iterator to extract its <em>base iterator</em> (i.e. the forward iterator its wrapping).</p>
+<p>The <em>O(n log n)</em> <code>insertion_sort()</code> follows directly:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
+    rotate_right(upper_bound(first, iter, *iter),
+                 iter, next(iter));
+  }
+}</code></pre></div>
+<p><code>upper_bound()</code> returns the first element in a range that compares greater than a look-up key (or <code>last</code> if no such element exists). It does that in <em>O(log n)</em> time by requiring the range to be sorted or at least partitioned around the look-up key.</p>
 <h3 id="in-place-merge-sort">In-Place Merge Sort</h3>
+<p>The canonical implementation of merge sort partitions the given range in half and recursively sorts each half, but it performs the merge step in a separate range from that of the two partitions. In-place merge sort, on the other hand, performs the merge step in-place. The two partitions are kept adjacent in memory constituting one big range. The two elements at the beginning of each partition are compared and the smallest is moved to the beginning of the combined range shifting elements as necessary.</p>
+<p>Following is the top-level <code>mergesort()</code> procedure:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> mergesort(I first, I last) {
+  <span class="kw">auto</span>&amp;&amp; size = distance(first, last);
+  <span class="kw">if</span> (size &lt; <span class="dv">2</span>) {
+    <span class="kw">return</span>;
+  }
+
+  <span class="kw">auto</span>&amp;&amp; mid = first + size / <span class="dv">2</span> + size % <span class="dv">2</span>;
+
+  mergesort(first, mid);
+  mergesort(mid, last);
+  merge(first, mid, last);
+}</code></pre></div>
+<p>As described, unless the given range has only one element, <code>mergesort()</code> partitions the given range in half and recursively sorts each half. Finally, it calls the in-place <code>merge()</code> procedure to merge the two sorted partitions. The two partitions are adjacent in memory with iterator <code>mid</code> pointing at the beginning of the second partition.</p>
+<p>Here’s one way to implement the in-place <code>merge()</code> procedure:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
+<span class="dt">void</span> merge(I first, I mid, I last) {
+  <span class="kw">while</span> (first != mid &amp;&amp; mid != last) {
+    <span class="kw">auto</span> iter = mid;
+    first = upper_bound(first, mid, *mid);
+    mid = upper_bound(mid, last, *first);
+    rotate(first, iter, mid);
+  }
+}</code></pre></div>
+<p>In every iteration, <code>merge()</code> does the following:</p>
+<ol style="list-style-type: decimal">
+<li><p>It skips over the first few elements in the first partition that are less than the first element of the second partition (i.e. <code>*mid</code>). These elements are essentially in their correct final location, so no need to move them. It does that by calling <code>upper_bound()</code> on the first partition and assigning the result back to <code>first</code>.</p></li>
+<li><p>Next, it does the same thing for the second partition. It skips over the first few elements in the second partition that are greater than the value pointed at by <code>first</code>. This time it does it because these elements are all going to have to be moved before <code>first</code>, so there’s no point in moving them one-by-one if they can be moved as a batch.</p></li>
+<li><p>Finally, it calls <code>rotate()</code> to move those elements before <code>first</code>.</p></li>
+</ol>
+<p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!</p>
+<h3 id="randomized-quicksort">Randomized Quicksort</h3>
 <div class="footnotes">
 <hr />
 <ol>
