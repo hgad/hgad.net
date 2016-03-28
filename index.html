@@ -281,7 +281,8 @@ I quicksort_stable_partition(I first, I last, S offset) {
     <span class="kw">return</span>;
   }
 
-  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt; distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
+  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
+    distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
 
   <span class="kw">auto</span> mid = partitioner(first, last, distribution(engine));
   quicksort_impl(first, mid, engine, partitioner);
