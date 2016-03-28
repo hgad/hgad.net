@@ -208,7 +208,7 @@
 <li><p>Next, it does the same thing for the second partition. It skips over the first few elements in the second partition that are greater than the value pointed at by <code>first</code>. This time it does it because these elements are all going to have to be moved before <code>first</code>, so there’s no point in moving them one-by-one if they can be moved as a batch.</p></li>
 <li><p>Finally, it calls <code>rotate()</code> to move those elements before <code>first</code>.</p></li>
 </ol>
-<p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!</p>
+<p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!<a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a></p>
 <h3 id="randomized-quicksort">Randomized Quicksort</h3>
 <p>Quicksort is by far the most widely used sorting algorithm. Even though its worst case running time is <em>O(n<sup>2</sup>)</em>, its expected running time is <em>O(n log n)</em>. It works by partitioning the given range around some pivot chosen from the range (usually the first element). It then recursively partitions the two resulting ranges until the original range is fully sorted. The choice of a pivot from a fixed location every time is known to degrade the algorithm’s performance to its worst case when the input range is originally sorted (forwards or backwards). A common way to mitigate this effect is to choose the pivot randomly among the range elements every time. This last variation is commonly known as randomized quicksort.</p>
 <p>Another important aspect about quicksort is that it doesn’t guarantee the stability of the resulting range unless the partitioning algorithm is stable. This means that equivalent elements might not end up sorted in the same order they used to be in originally. That’s okay for primitive types, but it’s not always okay for composite types.</p>
@@ -281,6 +281,7 @@ I quicksort_partition(I first, I last, S offset, F partition) {
 <li id="fn3"><p>Introduction to Algorithms, by Cormen et al.<a href="#fnref3">↩</a></p></li>
 <li id="fn4"><p>Before C++11, <code>rotate()</code> used to return <code>void</code>.<a href="#fnref4">↩</a></p></li>
 <li id="fn5"><p><code>rotate()</code> can be implemented in <em>O(n)</em> time using three <code>reverse()</code>s. In fact, this implementation results in a number of swaps almost exactly equals to <em>n</em>.<a href="#fnref5">↩</a></p></li>
+<li id="fn6"><p>I was informed that this merge implementation is simple but not ideal. In-place merging can be done in <em>O(n log n)</em> worst case time but the implementation is more complex.<a href="#fnref6">↩</a></p></li>
 </ol>
 </div>
   </p>
