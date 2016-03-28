@@ -201,7 +201,7 @@
     std::chrono::system_clock::now().time_since_epoch().count());
 
   quicksort_impl(first, last, move(engine),
-    std::partition&lt;I, std::function&lt;<span class="dt">bool</span>(<span class="kw">decltype</span>(*first))&gt;&gt;);
+    quicksort_partition&lt;I, <span class="kw">decltype</span>(distance(first, last))&gt;);
 }
 
 <span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
@@ -210,49 +210,66 @@
     std::chrono::system_clock::now().time_since_epoch().count());
 
   quicksort_impl(first, last, move(engine),
-    std::stable_partition&lt;I, std::function&lt;<span class="dt">bool</span>(<span class="kw">decltype</span>(*first))&gt;&gt;);
+    quicksort_stable_partition&lt;I, <span class="kw">decltype</span>(distance(first, last))&gt;);
 }</code></pre></div>
 <p>Both functions initialize a random number generation engine from a unique seed (the current time) and pass it along with the right partitioning algorithm to <code>quicksort_impl()</code> which does the real work.</p>
+<p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could directly be used as partition procedures for quicksort, but that’s not possible.</p>
 <p>Both <code>std::partition</code> and <code>std::stable_partition</code> take a range and a unary predicate. They partition the range in-place into two ranges such that every element that satisfies the predicate ends up in the first range and every element that doesn’t satisfy the predicate ends up in the second range. They both return an iterator to the beginning of the second range. Obviously, <code>std::stable_partition</code> does this in a stable manner!</p>
-<p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could directly be used as partition procedures for quicksort, but that’s not possible. Quicksort partitioning requires that the pivot be chosen from the given range and that it ends up exactly between the two resulting ranges. STL partitioning algorithms do not require that and do not guarantee that the pivot will end up between the two partitions, even if it exists in the range.</p>
+<p>Quicksort partitioning requires that the pivot be chosen from the given range and that it ends up exactly between the two resulting ranges. STL partitioning algorithms do not guarantee that the pivot will end up between the two partitions, even if it exists in the range.</p>
 <p>Consider the following range:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">10</span>, <span class="dv">7</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
 <p>Here’s a perfectly valid partitioning using a “less-than 9” predicate:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">7</span>, <span class="dv">10</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
 <p>The algorithm would return an iterator to <code>10</code>. Every element before this iterator satisfies the predicate and every element starting at that iterator does not satisfy the predicate. Even though <code>9</code> is in the range, it’s not required to end up between the two partitions.</p>
-<p>So it looks like we need to implement a partitioning function that takes one of the STL’s partitioning algorithms as argument along with the pivot offset and performs partitioning as required by the quicksort algorithm:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S, <span class="kw">typename</span> F&gt;
-I quicksort_partition(I first, I last, S offset, F partition) {
+<p>So we need to implement two quicksort partitioning procedures that take the pivot offset and perform partitioning as required by the quicksort algorithm, possibly making use of STL partitioning algorithms:</p>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
+I quicksort_partition(I first, I last, S offset) {
   assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; distance(first, last));
 
   iter_swap(first, next(first, offset));
+
   <span class="kw">auto</span>&amp;&amp; ret =
-    prev(partition(next(first), last,
+    prev(std::partition(next(first), last,
            [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="kw">return</span> val &lt; *first; }));
+
   iter_swap(first, ret);
 
   <span class="kw">return</span> ret;
+}
+
+<span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
+I quicksort_stable_partition(I first, I last, S offset) {
+  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; distance(first, last));
+
+  <span class="kw">auto</span>&amp;&amp; pivot_iter = next(first, offset);
+  rotate(first, pivot_iter, next(pivot_iter));
+
+  <span class="kw">auto</span>&amp;&amp; ret =
+    prev(std::stable_partition(next(first), last,
+           [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="kw">return</span> val &lt; *first; }));
+
+  rotate(first, next(first), next(ret));
+
+  <span class="kw">return</span> ret;
 }</code></pre></div>
-<p>The implementation is simple. <code>quicksort_partition()</code> swaps the pivot with first element of the range, performs partitioning over the full range excluding the pivot, swaps the pivot back with the last element in the first range and returns an iterator to that location.</p>
+<p>The unstable partitioning function swaps the pivot with first element of the range, performs partitioning over the full range excluding the pivot, swaps the pivot back with the last element in the first range and returns an iterator to that location.</p>
 <p><code>iter_swap()</code> swaps range elements by iterators rather than references.</p>
+<p>The stable partitioning function however cannot swap elements arbitrarily in the range because this changes their relative order, so it needs to use <code>rotate()</code> to bring the pivot to the front and back to its final location.</p>
 <p>The remaining piece now is <code>quicksort_impl()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> E, <span class="kw">typename</span> F&gt;
-<span class="dt">void</span> quicksort_impl(I first, I last, E&amp;&amp; engine, F partition) {
+<span class="dt">void</span> quicksort_impl(I first, I last, E&amp;&amp; engine, F partitioner) {
   <span class="kw">auto</span> size = distance(first, last);
   <span class="kw">if</span> (size &lt; <span class="dv">2</span>) {
     <span class="kw">return</span>;
   }
 
-  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
-    distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
+  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt; distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
 
-  <span class="kw">auto</span> mid = quicksort_partition(first, last,
-               distribution(engine), partition);
-
-  quicksort_impl(first, mid, engine, partition);
-  quicksort_impl(next(mid), last, engine, partition);
+  <span class="kw">auto</span> mid = partitioner(first, last, distribution(engine));
+  quicksort_impl(first, mid, engine, partitioner);
+  quicksort_impl(next(mid), last, engine, partitioner);
 }</code></pre></div>
-<p>It simply takes the random number generation engine and partitioning algorithm from the convenience wrappers, generates a uniformly distributed random index in the given range and passes it as a pivot offset along with the partitioning algorithm to <code>quicksort_partition()</code>. It gets back an iterator to the middle of the partitioned range and recursively sorts the resulting two partitions.</p>
+<p>It simply takes the random number generation engine and partitioning algorithm from the convenience wrappers, generates a uniformly distributed random index in the given range and passes it as a pivot offset to the right partitioning algorithm. It gets back an iterator to the middle of the partitioned range and recursively sorts the resulting two partitions.</p>
 <h3 id="conclusion">Conclusion</h3>
 <p>We saw variations of three common sorting algorithms implemented generically and compactly using STL algorithms. In general, STL algorithms are more applicable than they look. The key to utilizing them is to always ask whether the raw loop I’m about to write (or the one I’m reading) can be replaced by a packaged STL algorithm. You’d be surprised how many times this question can be answered affirmatively.</p>
 <div class="footnotes">
