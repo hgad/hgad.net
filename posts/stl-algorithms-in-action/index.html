@@ -100,6 +100,10 @@
 <p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">if</span> (distance(first, last) &lt; <span class="dv">2</span>) {
+    <span class="kw">return</span>;
+  }
+
   <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; j = next(first); j != last; ++j) {
     <span class="kw">auto</span> key = *j;
     <span class="kw">auto</span>&amp;&amp; i = prev(j);
@@ -131,27 +135,26 @@
 <p>In any case, given <code>insert_last_after()</code>, <code>insertion_sort()</code> becomes trivial:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">if</span> (distance(first, last) &lt; <span class="dv">2</span>) {
+    <span class="kw">return</span>;
+  }
+
   <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
     insert_last_after(first, next(iter),
       [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="kw">return</span> value &lt;= *iter; });
   }
 }</code></pre></div>
 <p>Notice that the arguments to <code>insert_last_after()</code> are initialized with iterators one position to the right of where the <code>reverse_iterator</code>s are supposed to point. This is because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with.</p>
-<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved directly using <code>upper_bound()</code>. Once that element is found, we need to perform a right rotate to insert the element at <code>iter</code> before it. A right rotate can be implemented using <code>rotate()</code> with <code>reverse_iterator</code>s:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-I rotate_right(I first, I middle, I last) {
-  <span class="kw">return</span> rotate(
-           make_reverse_iterator(last),
-           make_reverse_iterator(middle),
-           make_reverse_iterator(first)).base();
-}</code></pre></div>
-<p><code>rotate()</code> returns an iterator of the same type as its arguments, which in this case are <code>reverse_iterator</code>s. For consistency’s sake, <code>rotate_right()</code> should behave similarly by returning an iterator of the same type as its arguments. That’s the reason I’m calling <code>base()</code> on <code>rotate()</code>’s return iterator to extract its <em>base iterator</em> (i.e. the forward iterator its wrapping).</p>
+<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved directly using <code>upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it.</p>
 <p>The <em>O(n log n)</em> <code>insertion_sort()</code> follows directly:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
+  <span class="kw">if</span> (distance(first, last) &lt; <span class="dv">2</span>) {
+    <span class="kw">return</span>;
+  }
+
   <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = next(first); iter != last; ++iter) {
-    rotate_right(upper_bound(first, iter, *iter),
-                 iter, next(iter));
+    rotate(upper_bound(first, iter, *iter), iter, next(iter));
   }
 }</code></pre></div>
 <p><code>upper_bound()</code> returns the first element in a range that compares greater than a look-up key (or <code>last</code> if no such element exists). It does that in <em>O(log n)</em> time by requiring the range to be sorted or at least partitioned around the look-up key.</p>
