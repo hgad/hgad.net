@@ -15,7 +15,7 @@
     <id>http://hgad.net/posts/stl-algorithms-in-action/index.html</id>
     <published>2016-03-25T00:00:00Z</published>
     <updated>2016-03-25T00:00:00Z</updated>
-    <summary type="html"><![CDATA[Demonstrating the versatility of STL algorithms by implementing famous sorting algorithms in terms of STL algorithms.]]></summary>
+    <summary type="html"><![CDATA[Demonstrating the versatility of STL algorithms by implementing common sorting algorithms using STL algorithms.]]></summary>
 </entry>
 <entry>
     <title>Object Inspection in GDB</title>
