@@ -117,24 +117,24 @@
 <h3 id="insertion-sort">Insertion Sort</h3>
 <p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
+<span class="dt">void</span> insertion_sort1(I first, I last) {
   <span class="kw">if</span> (distance(first, last) &lt; <span class="dv">2</span>) {
     <span class="kw">return</span>;
   }
 
   <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; j = next(first); j != last; ++j) {
     <span class="kw">auto</span> key = *j;
-    <span class="kw">auto</span>&amp;&amp; i = prev(j);
-    <span class="kw">while</span> (i != prev(first) &amp;&amp; *i &gt; key) {
-      *next(i) = *i;
+    <span class="kw">auto</span> i = j;
+    <span class="kw">while</span> (i != first &amp;&amp; *prev(i) &gt; key) {
+      *i = *prev(i);
       --i;
     }
 
-    *next(i) = key;
+    *i = key;
   }
 }</code></pre></div>
 <p>It’s compact and generic, but aside from the function name, it’s completely non-obvious what the nested loops are doing at first sight. Let’s see how to make this more readable.</p>
-<p>By examining the inner loop, it looks like it searches backwards in the given range for a value less than or equal to <code>key</code>. It starts from the value just before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one position to the right. Once the value is found (or we reach the beginning of the range), the value at <code>j</code> is then inserted.</p>
+<p>By examining the inner loop, it looks like it searches backwards in the given range for a value less than or equal to <code>key</code>. It starts from the value just before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one position to the right. Once the value is found (or we reach the beginning of the range), the value at <code>j</code> (i.e. <code>key</code>) is then inserted.</p>
 <p>Let’s pretend for a moment that the range is being scanned in the forward rather than the backward direction. In this case, all we need is a function that searches a range for an element (call it <code>k</code>) that satisfies a certain predicate. When <code>k</code> is found (or we reach the end of the range), the function has to insert the first element of the range before <code>k</code> and shift all elements between them one position to the left:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
 <span class="dt">void</span> insert_first_before(I first, I last, P pred) {
