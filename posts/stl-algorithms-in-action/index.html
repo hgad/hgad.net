@@ -145,8 +145,7 @@
   }
 }</code></pre></div>
 <p>Notice that the arguments to <code>insert_last_after()</code> are initialized with iterators one position to the right of where the <code>reverse_iterator</code>s are supposed to point. This is because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with.</p>
-<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead, which gives us an <em>O(n log n)</em> version of insertion sort. This can be achieved directly using <code>upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it.</p>
-<p>The <em>O(n log n)</em> <code>insertion_sort()</code> follows directly:</p>
+<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead. This can be achieved directly using <code>upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
   <span class="kw">if</span> (distance(first, last) &lt; <span class="dv">2</span>) {
