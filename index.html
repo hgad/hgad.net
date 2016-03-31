@@ -118,7 +118,7 @@
 <p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (std::distance(first, last) &lt; <span class="dv">2</span>) {
+  <span class="kw">if</span> (first == last) {
     <span class="kw">return</span>;
   }
 
@@ -154,7 +154,7 @@
 <p>In any case, given <code>insert_last_after()</code>, <code>insertion_sort()</code> becomes trivial:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (std::distance(first, last) &lt; <span class="dv">2</span>) {
+  <span class="kw">if</span> (first == last) {
     <span class="kw">return</span>;
   }
 
@@ -167,7 +167,7 @@
 <p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead. This can be achieved directly using <code>std::upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (std::distance(first, last) &lt; <span class="dv">2</span>) {
+  <span class="kw">if</span> (first == last) {
     <span class="kw">return</span>;
   }
 
