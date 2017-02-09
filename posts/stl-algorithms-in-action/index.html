@@ -4,6 +4,12 @@
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
   <head>
+    <script type="text/javascript">
+        var host = "hgad.net";
+        if ((host == window.location.host) && (window.location.protocol != "https:"))
+            window.location.protocol = "https";
+    </script>
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>STL Algorithms in Action</title>
@@ -100,15 +106,15 @@
 <p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (first == last) {
-    <span class="kw">return</span>;
+  <span class="cf">if</span> (first == last) {
+    <span class="cf">return</span>;
   }
 
-  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; j = std::next(first); j != last; ++j) {
+  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; j = <span class="bu">std::</span>next(first); j != last; ++j) {
     <span class="kw">auto</span> key = *j;
     <span class="kw">auto</span> i = j;
-    <span class="kw">while</span> (i != first &amp;&amp; *std::prev(i) &gt; key) {
-      *i = *std::prev(i);
+    <span class="cf">while</span> (i != first &amp;&amp; *<span class="bu">std::</span>prev(i) &gt; key) {
+      *i = *<span class="bu">std::</span>prev(i);
       --i;
     }
 
@@ -120,42 +126,42 @@
 <p>Let’s pretend for a moment that the range is being scanned in the forward rather than the backward direction. In this case, all we need is a function that searches a range for an element (call it <code>k</code>) that satisfies a certain predicate. When <code>k</code> is found (or we reach the end of the range), the function has to insert the first element of the range before <code>k</code> and shift all elements between them one position to the left:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
 <span class="dt">void</span> insert_first_before(I first, I last, P pred) {
-  <span class="kw">auto</span>&amp;&amp; second = std::next(first);
-  std::rotate(first, second,
-    std::find_if(second, last, pred));
+  <span class="kw">auto</span>&amp;&amp; second = <span class="bu">std::</span>next(first);
+  <span class="bu">std::</span>rotate(first, second,
+    <span class="bu">std::</span>find_if(second, last, pred));
 }</code></pre></div>
 <p>If you’re surprised to see <code>std::rotate()</code> being used here, you’re not alone. Sean Parent’s GoingNative 2013 <a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in this respect. Turns out <code>std::rotate()</code> is one of the handiest algorithms in the Standard Library. It takes three iterators: <code>first</code>, <code>middle</code> and <code>last</code>. It performs a left-rotate operation such that the elements between <code>middle</code> and <code>last</code> are moved to the beginning of the range, and the elements between <code>first</code> and <code>middle</code> are moved to the end of the range. It also returns an iterator to the beginning of the second range after rotation, which often comes in handy<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Essentially, every time you find yourself manually shifting elements, there’s almost always a better way to achieve the same effect using <code>std::rotate()</code><a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>.</p>
 <p>Going back to our problem, what we originally needed was an algorithm that scans a range backwards not forwards. This can be achieved easily using <code>reverse_iterator</code>s:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
 <span class="dt">void</span> insert_last_after(I first, I last, P pred) {
   insert_first_before(
-    std::make_reverse_iterator(last),
-    std::make_reverse_iterator(first), pred);
+    <span class="bu">std::</span>make_reverse_iterator(last),
+    <span class="bu">std::</span>make_reverse_iterator(first), pred);
 }</code></pre></div>
 <p>You may notice that the function name isn’t ideal. The word <code>last</code> in the function name refers to the last element in the range, while <code>last</code> the formal parameter, refers to the element one past the end of the range.</p>
 <p>In any case, given <code>insert_last_after()</code>, <code>insertion_sort()</code> becomes trivial:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (first == last) {
-    <span class="kw">return</span>;
+  <span class="cf">if</span> (first == last) {
+    <span class="cf">return</span>;
   }
 
-  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = std::next(first); iter != last; ++iter) {
-    insert_last_after(first, std::next(iter),
-      [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="kw">return</span> value &lt;= *iter; });
+  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; iter = <span class="bu">std::</span>next(first); iter != last; ++iter) {
+    insert_last_after(first, <span class="bu">std::</span>next(iter),
+      [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="cf">return</span> value &lt;= *iter; });
   }
 }</code></pre></div>
 <p>Notice that the arguments to <code>insert_last_after()</code> are initialized with iterators one position to the right of where the <code>reverse_iterator</code>s are supposed to point. This is because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with.</p>
 <p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead. This can be achieved directly using <code>std::upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="kw">if</span> (first == last) {
-    <span class="kw">return</span>;
+  <span class="cf">if</span> (first == last) {
+    <span class="cf">return</span>;
   }
 
-  <span class="kw">for</span> (<span class="kw">auto</span>&amp;&amp; iter = std::next(first); iter != last; ++iter) {
-    std::rotate(std::upper_bound(first, iter, *iter),
-                iter, std::next(iter));
+  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; iter = <span class="bu">std::</span>next(first); iter != last; ++iter) {
+    <span class="bu">std::</span>rotate(<span class="bu">std::</span>upper_bound(first, iter, *iter),
+                iter, <span class="bu">std::</span>next(iter));
   }
 }</code></pre></div>
 <p><code>std::upper_bound()</code> returns the first element in a range that compares greater than a look-up key (or <code>last</code> if no such element exists). It does that in <em>O(log n)</em> time by requiring the range to be sorted or at least partitioned around the look-up key.</p>
@@ -164,9 +170,9 @@
 <p>Following is the top-level <code>mergesort()</code> procedure:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> mergesort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; size = std::distance(first, last);
-  <span class="kw">if</span> (size &lt; <span class="dv">2</span>) {
-    <span class="kw">return</span>;
+  <span class="kw">auto</span>&amp;&amp; size = <span class="bu">std::</span>distance(first, last);
+  <span class="cf">if</span> (size &lt; <span class="dv">2</span>) {
+    <span class="cf">return</span>;
   }
 
   <span class="kw">auto</span>&amp;&amp; mid = first + size / <span class="dv">2</span> + size % <span class="dv">2</span>;
@@ -179,11 +185,11 @@
 <p>Here’s one way to implement the in-place <code>merge()</code> procedure:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> merge(I first, I mid, I last) {
-  <span class="kw">while</span> (first != mid &amp;&amp; mid != last) {
+  <span class="cf">while</span> (first != mid &amp;&amp; mid != last) {
     <span class="kw">auto</span> iter = mid;
-    first = std::upper_bound(first, mid, *mid);
-    mid = std::upper_bound(mid, last, *first);
-    std::rotate(first, iter, mid);
+    first = <span class="bu">std::</span>upper_bound(first, mid, *mid);
+    mid = <span class="bu">std::</span>upper_bound(mid, last, *first);
+    <span class="bu">std::</span>rotate(first, iter, mid);
   }
 }</code></pre></div>
 <p>In every iteration, <code>merge()</code> does the following:</p>
@@ -199,20 +205,20 @@
 <p>Stable partitioning is typically more expensive and is not always needed, so it would be nice to have two versions of <code>quicksort()</code>: a stable and an unstable version. This suggests that the partitioning algorithm should be a parameter to <code>quicksort()</code>, but that would make the interface very inconvenient to use. Luckily, we can hide these petty details behind good looking interfaces:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> quicksort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; engine = std::default_random_engine(
-    std::chrono::system_clock::now().time_since_epoch().count());
+  <span class="kw">auto</span>&amp;&amp; engine = <span class="bu">std::</span>default_random_engine(
+    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now().time_since_epoch().count());
 
-  quicksort_impl(first, last, std::move(engine),
-    quicksort_partition&lt;I, <span class="kw">decltype</span>(std::distance(first, last))&gt;);
+  quicksort_impl(first, last, <span class="bu">std::</span>move(engine),
+    quicksort_partition&lt;I, <span class="kw">decltype</span>(<span class="bu">std::</span>distance(first, last))&gt;);
 }
 
 <span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
 <span class="dt">void</span> stable_quicksort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; engine = std::default_random_engine(
-    std::chrono::system_clock::now().time_since_epoch().count());
+  <span class="kw">auto</span>&amp;&amp; engine = <span class="bu">std::</span>default_random_engine(
+    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now().time_since_epoch().count());
 
-  quicksort_impl(first, last, std::move(engine),
-    quicksort_stable_partition&lt;I, <span class="kw">decltype</span>(std::distance(first, last))&gt;);
+  quicksort_impl(first, last, <span class="bu">std::</span>move(engine),
+    quicksort_stable_partition&lt;I, <span class="kw">decltype</span>(<span class="bu">std::</span>distance(first, last))&gt;);
 }</code></pre></div>
 <p>Both functions initialize a random number generation engine from a unique seed (the current time) and pass it along with the right partitioning algorithm to <code>quicksort_impl()</code> which does the real work.</p>
 <p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could directly be used as partition procedures for quicksort, but that’s not possible.</p>
@@ -226,33 +232,33 @@
 <p>So we need to implement two quicksort partitioning procedures that take the pivot offset and perform partitioning as required by the quicksort algorithm, possibly making use of STL partitioning algorithms:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
 I quicksort_partition(I first, I last, S offset) {
-  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; std::distance(first, last));
+  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; <span class="bu">std::</span>distance(first, last));
 
-  std::iter_swap(first, std::next(first, offset));
+  <span class="bu">std::</span>iter_swap(first, <span class="bu">std::</span>next(first, offset));
 
   <span class="kw">auto</span>&amp;&amp; ret =
-    std::prev(std::partition(next(first), last,
-      [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="kw">return</span> val &lt; *first; }));
+    <span class="bu">std::</span>prev(<span class="bu">std::</span>partition(next(first), last,
+      [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="cf">return</span> val &lt; *first; }));
 
-  std::iter_swap(first, ret);
+  <span class="bu">std::</span>iter_swap(first, ret);
 
-  <span class="kw">return</span> ret;
+  <span class="cf">return</span> ret;
 }
 
 <span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
 I quicksort_stable_partition(I first, I last, S offset) {
-  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; std::distance(first, last));
+  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; <span class="bu">std::</span>distance(first, last));
 
-  <span class="kw">auto</span>&amp;&amp; pivot_iter = std::next(first, offset);
-  std::rotate(first, pivot_iter, std::next(pivot_iter));
+  <span class="kw">auto</span>&amp;&amp; pivot_iter = <span class="bu">std::</span>next(first, offset);
+  <span class="bu">std::</span>rotate(first, pivot_iter, <span class="bu">std::</span>next(pivot_iter));
 
   <span class="kw">auto</span>&amp;&amp; ret =
-    std::prev(std::stable_partition(std::next(first), last,
-           [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="kw">return</span> val &lt; *first; }));
+    <span class="bu">std::</span>prev(<span class="bu">std::</span>stable_partition(<span class="bu">std::</span>next(first), last,
+           [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="cf">return</span> val &lt; *first; }));
 
-  std::rotate(first, std::next(first), std::next(ret));
+  <span class="bu">std::</span>rotate(first, <span class="bu">std::</span>next(first), <span class="bu">std::</span>next(ret));
 
-  <span class="kw">return</span> ret;
+  <span class="cf">return</span> ret;
 }</code></pre></div>
 <p>The unstable partitioning function swaps the pivot with first element of the range, performs partitioning over the full range excluding the pivot, swaps the pivot back with the last element in the first range and returns an iterator to that location.</p>
 <p><code>std::iter_swap()</code> swaps range elements by iterators rather than references.</p>
@@ -260,17 +266,17 @@ I quicksort_stable_partition(I first, I last, S offset) {
 <p>The remaining piece now is <code>quicksort_impl()</code>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> E, <span class="kw">typename</span> F&gt;
 <span class="dt">void</span> quicksort_impl(I first, I last, E&amp;&amp; engine, F partitioner) {
-  <span class="kw">auto</span> size = std::distance(first, last);
-  <span class="kw">if</span> (size &lt; <span class="dv">2</span>) {
-    <span class="kw">return</span>;
+  <span class="kw">auto</span> size = <span class="bu">std::</span>distance(first, last);
+  <span class="cf">if</span> (size &lt; <span class="dv">2</span>) {
+    <span class="cf">return</span>;
   }
 
-  std::uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
+  <span class="bu">std::</span>uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
     distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
 
   <span class="kw">auto</span> mid = partitioner(first, last, distribution(engine));
   quicksort_impl(first, mid, engine, partitioner);
-  quicksort_impl(std::next(mid), last, engine, partitioner);
+  quicksort_impl(<span class="bu">std::</span>next(mid), last, engine, partitioner);
 }</code></pre></div>
 <p>It simply takes the random number generation engine and partitioning algorithm from the convenience wrappers, generates a uniformly distributed random index in the given range and passes it as a pivot offset to the right partitioning algorithm. It gets back an iterator to the middle of the partitioned range and recursively sorts the resulting two partitions.</p>
 <h3 id="conclusion">Conclusion</h3>

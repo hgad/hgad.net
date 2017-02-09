@@ -4,6 +4,12 @@
 <!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
   <head>
+    <script type="text/javascript">
+        var host = "hgad.net";
+        if ((host == window.location.host) && (window.location.protocol != "https:"))
+            window.location.protocol = "https";
+    </script>
+
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>Object Inspection in GDB</title>
@@ -94,30 +100,30 @@
 <section class="post-body">
   <p>
   <p>One of the primary needs of a developer, while debugging any code, is to be able to inspect, not only primitive values, but also compound values (like objects). The problem is that objects are usually littered with lots of irrelevant information that obscure the essence of what the developer might be interested in. It becomes even worse when the interesting pieces of an object are in dynamic memory, in which case all you get to see are dumb pointers. Consider the following code:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="ot">#include &lt;vector&gt;</span>
+<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="pp">#include </span><span class="im">&lt;vector&gt;</span>
 
 <span class="dt">int</span> main() {
-  std::vector&lt;<span class="dt">int</span>&gt; v;
+  <span class="bu">std::</span>vector&lt;<span class="dt">int</span>&gt; v;
   v.push_back(<span class="dv">1</span>);
   v.push_back(<span class="dv">2</span>);
   v.push_back(<span class="dv">3</span>);
   v.push_back(<span class="dv">4</span>);
   v.push_back(<span class="dv">5</span>);
 
-  <span class="kw">return</span> <span class="dv">0</span>;
+  <span class="cf">return</span> <span class="dv">0</span>;
 }</code></pre></div>
 <p>Here’s the output from GDB when attempting to print <code>v</code> just before returning<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
 <span class="er">$</span><span class="dv">1</span> = {
-  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;std::__1::__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;:
+  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
+    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
+    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
     __begin_ = <span class="bn">0x100103a70</span>,
     __end_ = <span class="bn">0x100103a84</span>,
     __end_cap_ = {
-      &lt;std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;std::__1::allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
+      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
+        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
+        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
         __first_ = <span class="bn">0x100103a90</span>
       }, &lt;No data fields&gt;}
   }, &lt;No data fields&gt;}</code></pre></div>
@@ -188,7 +194,7 @@ end</code></pre></div>
 <p>Here’s the output from GDB using this pretty printer:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
 <span class="er">$</span><span class="dv">1</span> = {
-  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
+  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
     [<span class="dv">0</span>] = <span class="dv">1</span>,
     [<span class="dv">1</span>] = <span class="dv">2</span>,
     [<span class="dv">2</span>] = <span class="dv">3</span>,
@@ -198,15 +204,15 @@ end</code></pre></div>
 <p>At any point, if you need to print the <em>raw</em> version of a vector, you can use the <code>/r</code> switch:</p>
 <div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print /r v
 <span class="er">$</span><span class="dv">2</span> = {
-  &lt;std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;std::__1::__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of std::__1::__vector_base&lt;<span class="dt">int</span>, std::__1::allocator&lt;<span class="dt">int</span>&gt; &gt;:
+  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
+    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
+    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
     __begin_ = <span class="bn">0x100103a70</span>,
     __end_ = <span class="bn">0x100103a84</span>,
     __end_cap_ = {
-      &lt;std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;std::__1::allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of std::__1::__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, std::__1::allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
+      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
+        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
+        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
         __first_ = <span class="bn">0x100103a90</span>
       }, &lt;No data fields&gt;}
   }, &lt;No data fields&gt;}</code></pre></div>
