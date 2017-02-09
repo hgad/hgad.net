@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
     <title>Haitham Gad's Blog</title>
-    <link href="http://hgad.net/feed.xml" rel="self" />
-    <link href="http://hgad.net" />
-    <id>http://hgad.net/feed.xml</id>
+    <link href="https://hgad.net/feed.xml" rel="self" />
+    <link href="https://hgad.net" />
+    <id>https://hgad.net/feed.xml</id>
     <author>
         <name>Haitham Gad</name>
         <email>hgad@hgad.net</email>
@@ -11,16 +11,16 @@
     <updated>2016-03-25T00:00:00Z</updated>
     <entry>
     <title>STL Algorithms in Action</title>
-    <link href="http://hgad.net/posts/stl-algorithms-in-action/index.html" />
-    <id>http://hgad.net/posts/stl-algorithms-in-action/index.html</id>
+    <link href="https://hgad.net/posts/stl-algorithms-in-action/index.html" />
+    <id>https://hgad.net/posts/stl-algorithms-in-action/index.html</id>
     <published>2016-03-25T00:00:00Z</published>
     <updated>2016-03-25T00:00:00Z</updated>
     <summary type="html"><![CDATA[Demonstrating the versatility of STL algorithms by implementing common sorting algorithms using STL algorithms.]]></summary>
 </entry>
 <entry>
     <title>Object Inspection in GDB</title>
-    <link href="http://hgad.net/posts/object-inspection-in-gdb/index.html" />
-    <id>http://hgad.net/posts/object-inspection-in-gdb/index.html</id>
+    <link href="https://hgad.net/posts/object-inspection-in-gdb/index.html" />
+    <id>https://hgad.net/posts/object-inspection-in-gdb/index.html</id>
     <published>2014-05-24T00:00:00Z</published>
     <updated>2014-05-24T00:00:00Z</updated>
     <summary type="html"><![CDATA[GDB value pretty printing tutorial.]]></summary>
