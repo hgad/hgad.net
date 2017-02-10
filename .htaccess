@@ -1,5 +1,6 @@
+Options -Multiviews -Indexes +FollowSymLinks
 DirectorySlash Off
-Options -Indexes
 RewriteEngine On
+RewriteRule ^(.*)\/(\?.*)?$ $1$2 [R=301,L]
 ErrorDocument 404 /errors/404.html
 
