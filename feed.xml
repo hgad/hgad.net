@@ -11,16 +11,16 @@
     <updated>2016-03-25T00:00:00Z</updated>
     <entry>
     <title>STL Algorithms in Action</title>
-    <link href="https://hgad.net/posts/stl-algorithms-in-action/index.html" />
-    <id>https://hgad.net/posts/stl-algorithms-in-action/index.html</id>
+    <link href="https://hgad.net/posts/stl-algorithms-in-action" />
+    <id>https://hgad.net/posts/stl-algorithms-in-action</id>
     <published>2016-03-25T00:00:00Z</published>
     <updated>2016-03-25T00:00:00Z</updated>
     <summary type="html"><![CDATA[Demonstrating the versatility of STL algorithms by implementing common sorting algorithms using STL algorithms.]]></summary>
 </entry>
 <entry>
     <title>Object Inspection in GDB</title>
-    <link href="https://hgad.net/posts/object-inspection-in-gdb/index.html" />
-    <id>https://hgad.net/posts/object-inspection-in-gdb/index.html</id>
+    <link href="https://hgad.net/posts/object-inspection-in-gdb" />
+    <id>https://hgad.net/posts/object-inspection-in-gdb</id>
     <published>2014-05-24T00:00:00Z</published>
     <updated>2014-05-24T00:00:00Z</updated>
     <summary type="html"><![CDATA[GDB value pretty printing tutorial.]]></summary>
