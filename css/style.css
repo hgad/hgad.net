@@ -1,18 +1,22 @@
- @import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,700);@import url(https://fonts.googleapis.com/css?family=Inconsolata);@import url(https://fonts.googleapis.com/css?family=Muli:400,400italic);html, button, input, select, textarea{color:#222}html{font-size:1em;line-height:1.4}::-moz-selection{color:white;background:#586e75;text-shadow:none}::selection{color:white;background:#586e75;text-shadow:none}hr{display:block;height:1px;border:0;border-top:1px solid #ccc;margin:1em 0;padding:0}audio, canvas, img, video{vertical-align:middle}fieldset{border:0;margin:0;padding:0}textarea{resize:vertical}.browsehappy{margin:0.2em 0;background:#ccc;color:#000;padding:0.2em 0}
+ @import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,700);@import url(https://fonts.googleapis.com/css?family=Inconsolata);@import url(https://fonts.googleapis.com/css?family=Muli:400,400italic);html,button,input,select,textarea{color:#222}html{font-size:1em;line-height:1.4}::-moz-selection{color:white;background:#586e75;text-shadow:none}::selection{color:white;background:#586e75;text-shadow:none}hr{display:block;height:1px;border:0;border-top:1px solid #ccc;margin:1em 0;padding:0}audio,canvas,img,video{vertical-align:middle}fieldset{border:0;margin:0;padding:0}textarea{resize:vertical}.browsehappy{margin:0.2em 0;background:#ccc;color:#000;padding:0.2em 0}
 html{
  height:100%}
 
 body{
- font-family:muli, verdana, helvetica, sans-serif;
+ font-family:muli,verdana,helvetica,sans-serif;
  color:#073642;
  background-color:white;
  overflow-x:hidden;
  min-height:100%;
- min-width:700px;
- max-width:700px;
- height:auto !important;
- width:100%;
- position:relative}
+ margin:auto;
+ padding-left:30px;
+ padding-right:30px;
+ height:auto!important}
+ body em{
+ font-style:italic}
+
+body strong{
+ font-family:helvetica}
 
 a:focus{
  outline:none}
@@ -26,31 +30,26 @@ header hr{
  width:100%}
 
 header h1{
- font-family:"open sans condensed", sans-serif;
+ font-family:"open sans condensed",sans-serif;
  font-size:350%;
  font-weight:bold;
  color:#073642;
  margin-top:0;
  padding-top:0}
 
-header nav{
+nav{
  top:0;
- bottom:0;
+ right:0;
  left:0;
- height:100%;
- width:190px;
+ height:60px;
+ width:100%;
  position:fixed;
  z-index:100;
  background-color:#073642}
- header nav hr{
- color:white;
- margin-top:0px;
- margin-bottom:30px;
- margin-left:20px;
- text-align:center;
- width:146px}
+ nav hr{
+ display:none}
 
-header nav a:link{
+nav a:link{
  color:white;
  text-decoration:none;
  -webkit-transition:all 0.3s;
@@ -58,41 +57,44 @@ header nav a:link{
  -o-transition:all 0.3s;
  transition:all 0.3s}
 
-header nav a:visited{
+nav a:visited{
  color:white;
  text-decoration:none}
 
-header nav a:hover{
+nav a:hover{
  color:#dc322f;
  text-decoration:none}
 
-header nav table{
- font-family:"open sans condensed", sans-serif;
+nav table{
+ font-family:"open sans condensed",sans-serif;
  font-weight:300;
  font-size:130%;
  width:100%;
- text-align:right}
- header nav table td{
- width:100%;
- padding-top:5px;
- padding-bottom:5px;
- padding-right:40px}
+ min-width:16em;
+ text-align:center;
+ vertical-align:middle;
+ margin:auto}
+ nav table tr{
+ padding-top:15px;
+ padding-left:5%;
+ padding-right:5%;
+ display:inline-block}
 
 
 article{
  font-size:95%;
- margin-left:250px;
- margin-right:auto;
+ margin:auto;
+ padding-top:50px;
  padding-bottom:20px;
- width:650px}
+ width:850px}
  article h1{
- font-family:"open sans condensed", sans-serif;
+ font-family:"open sans condensed",sans-serif;
  font-size:350%;
  font-weight:bold;
  color:#073642;
  margin-top:50px}
  article h2{
- font-family:"open sans condensed", sans-serif;
+ font-family:"open sans condensed",sans-serif;
  font-size:260%;
  font-weight:bold;
  color:#073642;
@@ -101,14 +103,14 @@ article{
  margin-bottom:0;
  padding-bottom:0}
  article h3{
- font-family:"open sans condensed", sans-serif;
+ font-family:"open sans condensed",sans-serif;
  font-size:200%;
  margin-top:40px;
  padding-top:0;
  margin-bottom:0;
  padding-bottom:0}
  article h4{
- font-family:"open sans condensed", sans-serif;
+ font-family:"open sans condensed",sans-serif;
  font-size:150%;
  margin-top:0;
  padding-top:0;
@@ -134,7 +136,7 @@ article{
  padding-bottom:5px;
  padding-left:10px;
  padding-right:10px}
- article table pre, article table blockquote{
+ article table pre,article table blockquote{
  margin:0;
  padding-left:0;
  padding-right:0;
@@ -184,7 +186,7 @@ article a:hover{
  text-decoration:none}
 
 footer{
- font-family:arial, helvetica, sans-serif;
+ font-family:arial,helvetica,sans-serif;
  font-size:80%;
  color:#586e75;
  clear:both;
@@ -209,7 +211,6 @@ footer a:hover{
  text-decoration:none}
 
 footer table{
- margin-left:250px;
  width:100%}
  footer table td{
  border:0px;
@@ -223,7 +224,7 @@ footer table{
 
 #hakyll{
  text-align:right;
- padding-right:30px}
+ padding-right:0px}
 
 .about-section{
  margin-bottom:7%}
@@ -285,22 +286,18 @@ ul ul li:before{
  content:"\002D \0020"}
 
 #lambda{
- padding-top:30px;
- padding-bottom:20px;
- padding-left:15px;
- background-color:none}
+ display:none}
 
 #fractal{
  padding-top:30px;
  padding-bottom:20px;
  margin-left:auto;
  margin-right:auto;
- width:9em}
+ width:11em}
 
 #socialbar{
  margin-left:auto;
  margin-right:auto;
- padding-bottom:20px;
  width:12em}
 
 #socialbar a{
@@ -327,7 +324,7 @@ ul ul li:before{
  float:right}
 
 code{
- font-family:inconsolata, "courier new", courier, monospace;
+ font-family:inconsolata,"courier new",courier,monospace;
  font-size:100%}
 
 .sourceCode::-webkit-scrollbar{
@@ -337,14 +334,14 @@ code{
  -webkit-border-radius:100px}
 
 .sourceCode::-webkit-scrollbar:hover{
- background-color:rgba(0, 0, 0, 0.1)}
+ background-color:rgba(0,0,0,0.1)}
 
 .sourceCode::-webkit-scrollbar-thumb{
- background:rgba(0, 0, 0, 0.2);
+ background:rgba(0,0,0,0.2);
  -webkit-border-radius:100px}
 
 .sourceCode::-webkit-scrollbar-thumb:active{
- background:rgba(0, 0, 0, 0.61);
+ background:rgba(0,0,0,0.61);
  -webkit-border-radius:100px}
 
 code.sourceCode::-moz-selection{
@@ -402,13 +399,13 @@ pre.sourceCode span.dt{
  background:#d33682;
  text-shadow:none}
 
-pre.sourceCode span.dv, pre.sourceCode span.bn, pre.sourceCode span.fl, pre.sourceCode span.ch, pre.sourceCode span.st{
+pre.sourceCode span.dv,pre.sourceCode span.bn,pre.sourceCode span.fl,pre.sourceCode span.ch,pre.sourceCode span.st{
  color:#cb4b16}
- pre.sourceCode span.dv::-moz-selection, pre.sourceCode span.bn::-moz-selection, pre.sourceCode span.fl::-moz-selection, pre.sourceCode span.ch::-moz-selection, pre.sourceCode span.st::-moz-selection{
+ pre.sourceCode span.dv::-moz-selection,pre.sourceCode span.bn::-moz-selection,pre.sourceCode span.fl::-moz-selection,pre.sourceCode span.ch::-moz-selection,pre.sourceCode span.st::-moz-selection{
  color:white;
  background:#d33682;
  text-shadow:none}
- pre.sourceCode span.dv::selection, pre.sourceCode span.bn::selection, pre.sourceCode span.fl::selection, pre.sourceCode span.ch::selection, pre.sourceCode span.st::selection{
+ pre.sourceCode span.dv::selection,pre.sourceCode span.bn::selection,pre.sourceCode span.fl::selection,pre.sourceCode span.ch::selection,pre.sourceCode span.st::selection{
  color:white;
  background:#d33682;
  text-shadow:none}
@@ -481,7 +478,7 @@ pre.sourceCode span.er{
  background:#d33682;
  text-shadow:none}
 
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode, table.sourceCode pre{
+table.sourceCode,tr.sourceCode,td.lineNumbers,td.sourceCode,table.sourceCode pre{
  margin:0;
  padding:0;
  border:0;
@@ -515,7 +512,7 @@ td.sourceCode{
 
 
 .hidden{
- display:none !important;
+ display:none!important;
  visibility:hidden}
 
 
@@ -560,16 +557,16 @@ td.sourceCode{
 @media only screen and (min-width:35em){
 }
 
-@media print, (-o-min-device-pixel-ratio:5 / 4), (-webkit-min-device-pixel-ratio:1.25), (min-resolution:120dpi){
+@media print,(-o-min-device-pixel-ratio:5 / 4),(-webkit-min-device-pixel-ratio:1.25),(min-resolution:120dpi){
 }
 
 
 @media print{
  *{
- background:transparent !important;
- color:#000 !important;
- box-shadow:none !important;
- text-shadow:none !important}
+ background:transparent!important;
+ color:#000!important;
+ box-shadow:none!important;
+ text-shadow:none!important}
  a,
  a:visited{
  text-decoration:underline}
@@ -577,4 +574,4 @@ td.sourceCode{
  content:" (" attr(href) ")"}
  abbr[title]:after{
  content:" (" attr(title) ")"}
- .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after{content:""}pre, blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr, img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p, h2, h3{orphans:3;widows:3}h2, h3{page-break-after:avoid}}
+ .ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100%!important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h2,h3{page-break-after:avoid}}
