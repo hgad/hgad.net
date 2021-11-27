@@ -199,7 +199,7 @@
 <p>In every iteration, <code>merge()</code> does the following:</p>
 <ol style="list-style-type: decimal">
 <li><p>It skips over the first few elements in the first partition that are less than the first element of the second partition (i.e. <code>*mid</code>). These elements are essentially in their correct final location, so no need to move them. It does that by calling <code>std::upper_bound()</code> on the first partition and assigning the result back to <code>first</code>.</p></li>
-<li><p>Next, it does the same thing for the second partition. It skips over the first few elements in the second partition that are greater than the value pointed at by <code>first</code>. This time it does it because these elements are all going to have to be moved before <code>first</code>, so there’s no point in moving them one-by-one if they can be moved as a batch.</p></li>
+<li><p>Next, it does the same thing for the second partition. It skips over the first few elements in the second partition that are less than the value pointed at by <code>first</code>. This time it does it because these elements are all going to have to be moved before <code>first</code>, so there’s no point in moving them one-by-one if they can be moved as a batch.</p></li>
 <li><p>Finally, it calls <code>std::rotate()</code> to move those elements before <code>first</code>.</p></li>
 </ol>
 <p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!<a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a></p>
