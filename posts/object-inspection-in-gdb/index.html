@@ -9,8 +9,6 @@
         if ((host == window.location.host) && (window.location.protocol != "https:"))
             window.location.protocol = "https";
     </script>
-    
-    <script data-ad-client="ca-pub-9639478410810022" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
     <link rel="canonical" href="https://hgad.net/posts/object-inspection-in-gdb/" />
 
@@ -103,133 +101,208 @@
 
 <section class="post-body">
   <p>
-  <p>One of the primary needs of a developer, while debugging any code, is to be able to inspect, not only primitive values, but also compound values (like objects). The problem is that objects are usually littered with lots of irrelevant information that obscure the essence of what the developer might be interested in. It becomes even worse when the interesting pieces of an object are in dynamic memory, in which case all you get to see are dumb pointers. Consider the following code:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="pp">#include </span><span class="im">&lt;vector&gt;</span>
-
-<span class="dt">int</span> main() {
-  <span class="bu">std::</span>vector&lt;<span class="dt">int</span>&gt; v;
-  v.push_back(<span class="dv">1</span>);
-  v.push_back(<span class="dv">2</span>);
-  v.push_back(<span class="dv">3</span>);
-  v.push_back(<span class="dv">4</span>);
-  v.push_back(<span class="dv">5</span>);
-
-  <span class="cf">return</span> <span class="dv">0</span>;
-}</code></pre></div>
-<p>Here’s the output from GDB when attempting to print <code>v</code> just before returning<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
-<span class="er">$</span><span class="dv">1</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
-    __begin_ = <span class="bn">0x100103a70</span>,
-    __end_ = <span class="bn">0x100103a84</span>,
-    __end_cap_ = {
-      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
-        __first_ = <span class="bn">0x100103a90</span>
-      }, &lt;No data fields&gt;}
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>It’s obvious that this output is essentially useless. It’s basically a bunch of memory addresses and obscure data types with absolutely no reference to what the developer is looking for, the entries of the vector!</p>
-<p>GDB solves this problem (and others) by providing a full-fledged <a href="https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html">Python API</a><a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> for interacting with the inferior<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. This API can be used for inspecting all sorts of information about the inferior, including static and dynamic value types, symbols and symbol tables, stack frames and even allows you to evaluate expressions in the inferior language. Moreover, this API has facilities for controlling GDB itself, by defining and executing GDB commands, creating breakpoints and watchpoints, inspecting breakpoint attributes and much more.</p>
-<p>What we care about here is GDB’s <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API</a>. This API enables the creation of custom pretty printers for values of user-defined types. The goal is to allow the developer to use the plain old GDB <code>print</code> command on values of user-defined types and still get to see only the relevant pieces of the printed value.</p>
-<p>GDB’s Python API represents values from the inferior using the <code>gdb.Value</code> class, and represents types using the <code>gdb.Type</code> class. Documentation for these classes can be found <a href="https://sourceware.org/gdb/onlinedocs/gdb/Values-From-Inferior.html">here</a> and <a href="https://sourceware.org/gdb/onlinedocs/gdb/Types-In-Python.html">here</a>. The most important aspect about <code>gdb.Value</code> is that for object values, you can access object members using Python’s dictionary syntax e.g. <code>obj.mem</code> becomes <code>obj[&quot;mem&quot;]</code>.</p>
-<p>To create a pretty printer for a certain type, you need to create a <em>printer</em> class that has at least one method, <code>to_string()</code>, which converts that type to string for printing. If you know that your type represents some sort of an array, list or table, you may also need to add a <code>children()</code> method to your class. This later method must return an object conforming to the Python <a href="https://docs.python.org/2/library/stdtypes.html#iterator-types">iterator protocol</a>, where every item returned by that iterator must be a pair of child name and value as you wish to observe them in the output. If the child type also has a printer, GDB will automatically invoke it to print all the children.</p>
-<p>Let’s go ahead and write a pretty printer for <code>libc++</code>’s <code>std::vector</code><a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">import</span> gdb
-<span class="im">import</span> re
-
-<span class="kw">class</span> VectorPrinter(<span class="bu">object</span>):
-  <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span>
-  <span class="kw">class</span> _iterator(<span class="bu">object</span>):
-    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):
-      <span class="va">self</span>.counter <span class="op">=</span> <span class="dv">0</span>
-      <span class="va">self</span>.begin <span class="op">=</span> value[<span class="st">&quot;__begin_&quot;</span>]
-      <span class="va">self</span>.end <span class="op">=</span> value[<span class="st">&quot;__end_&quot;</span>]
-
-    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):
-      <span class="cf">return</span> <span class="va">self</span>
-
-    <span class="kw">def</span> <span class="bu">next</span>(<span class="va">self</span>):
-      <span class="cf">if</span> <span class="va">self</span>.begin <span class="op">==</span> <span class="va">self</span>.end:
-        <span class="cf">raise</span> <span class="pp">StopIteration</span>
-
-      ret <span class="op">=</span> (<span class="st">&quot;[</span><span class="sc">%d</span><span class="st">]&quot;</span> <span class="op">%</span> <span class="va">self</span>.counter, <span class="va">self</span>.begin.dereference())
-      <span class="va">self</span>.begin <span class="op">+=</span> <span class="dv">1</span>
-      <span class="va">self</span>.counter <span class="op">+=</span> <span class="dv">1</span>
-      <span class="cf">return</span> ret
-
-  <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):
-    <span class="va">self</span>.value <span class="op">=</span> value
-
-  <span class="kw">def</span> to_string(<span class="va">self</span>):
-    <span class="cf">return</span> <span class="st">&quot;vector&quot;</span>
-
-  <span class="kw">def</span> children(<span class="va">self</span>):
-    <span class="cf">return</span> <span class="va">self</span>._iterator(<span class="va">self</span>.value)</code></pre></div>
-<p>Note that we can access private members of <code>std::vector</code> (<code>__begin_</code> and <code>__end_</code>). This is because access rights are inactive in the debugger. You may wonder why we bother accessing data members of <code>std::vector</code> if we can just call <code>v.begin()</code> and <code>v.end()</code>. There are two reasons for this:</p>
-<ol style="list-style-type: decimal">
-<li><p>In many cases we just can’t, because these member functions are usually small enough that the compiler usually decides to inline them. If you try to print the <code>begin()</code> iterator for instance, you may get an error that looks something like this: <code>Cannot evaluate function -- may be inlined</code>.</p></li>
-<li><p>If the type you’re trying to print is an <em>incomplete type</em> e.g. if it’s not part of the process binary (it might be dynamically linked for instance), then you won’t even have access to any of the object’s members, in which case, the only way to refer to the object’s data members is by using pointer arithmetic.</p></li>
+  <p>One of the primary needs of a developer, while debugging any code, is to be able
+to inspect, not only primitive values, but also compound values (like objects).
+The problem is that objects are usually littered with lots of irrelevant
+information that obscure the essence of what the developer might be interested
+in. It becomes even worse when the interesting pieces of an object are in
+dynamic memory, in which case all you get to see are dumb pointers. Consider the
+following code:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;vector&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>vector<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> v<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">1</span><span class="op">);</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">2</span><span class="op">);</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">3</span><span class="op">);</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">4</span><span class="op">);</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">5</span><span class="op">);</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Here’s the output from GDB when attempting to print <code>v</code> just before
+returning<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print v</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">1</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common<span class="op">&lt;</span><span class="kw">true</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    __begin_ <span class="op">=</span> <span class="bn">0x100103a70</span><span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    __end_ <span class="op">=</span> <span class="bn">0x100103a84</span><span class="op">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    __end_cap_ <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        __first_ <span class="op">=</span> <span class="bn">0x100103a90</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>It’s obvious that this output is essentially useless. It’s basically a bunch of
+memory addresses and obscure data types with absolutely no reference to what
+the developer is looking for, the entries of the vector!</p>
+<p>GDB solves this problem (and others) by providing a full-fledged
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html">Python API</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>
+for interacting with the inferior<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. This API can be used for
+inspecting all sorts of information about the inferior, including static and
+dynamic value types, symbols and symbol tables, stack frames and even allows you
+to evaluate expressions in the inferior language. Moreover, this API has
+facilities for controlling GDB itself, by defining and executing GDB commands,
+creating breakpoints and watchpoints, inspecting breakpoint attributes and much
+more.</p>
+<p>What we care about here is GDB’s
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API</a>.
+This API enables the creation of custom pretty printers for values of
+user-defined types. The goal is to allow the developer to use the plain old GDB
+<code>print</code> command on values of user-defined types and still get to see only the
+relevant pieces of the printed value.</p>
+<p>GDB’s Python API represents values from the inferior using the <code>gdb.Value</code>
+class, and represents types using the <code>gdb.Type</code> class. Documentation for these
+classes can be found
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Values-From-Inferior.html">here</a> and
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Types-In-Python.html">here</a>. The most
+important aspect about <code>gdb.Value</code> is that for object values, you can access
+object members using Python’s dictionary syntax e.g. <code>obj.mem</code> becomes
+<code>obj["mem"]</code>.</p>
+<p>To create a pretty printer for a certain type, you need to create a <em>printer</em>
+class that has at least one method, <code>to_string()</code>, which converts that type to
+string for printing. If you know that your type represents some sort of an
+array, list or table, you may also need to add a <code>children()</code> method to your
+class. This later method must return an object conforming to the Python <a href="https://docs.python.org/2/library/stdtypes.html#iterator-types">iterator
+protocol</a>, where
+every item returned by that iterator must be a pair of child name and value as
+you wish to observe them in the output. If the child type also has a printer,
+GDB will automatically invoke it to print all the children.</p>
+<p>Let’s go ahead and write a pretty printer for <code>libc++</code>’s <code>std::vector</code><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gdb</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VectorPrinter(<span class="bu">object</span>):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">class</span> _iterator(<span class="bu">object</span>):</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.counter <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.begin <span class="op">=</span> value[<span class="st">&quot;__begin_&quot;</span>]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.end <span class="op">=</span> value[<span class="st">&quot;__end_&quot;</span>]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">next</span>(<span class="va">self</span>):</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="va">self</span>.begin <span class="op">==</span> <span class="va">self</span>.end:</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">StopIteration</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>      ret <span class="op">=</span> (<span class="st">&quot;[</span><span class="sc">%d</span><span class="st">]&quot;</span> <span class="op">%</span> <span class="va">self</span>.counter, <span class="va">self</span>.begin.dereference())</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.begin <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.counter <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> ret</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.value <span class="op">=</span> value</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> to_string(<span class="va">self</span>):</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;vector&quot;</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> children(<span class="va">self</span>):</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>._iterator(<span class="va">self</span>.value)</span></code></pre></div>
+<p>Note that we can access private members of <code>std::vector</code> (<code>__begin_</code> and
+<code>__end_</code>). This is because access rights are inactive in the debugger. You may
+wonder why we bother accessing data members of <code>std::vector</code> if we can just call
+<code>v.begin()</code> and <code>v.end()</code>. There are two reasons for this:</p>
+<ol type="1">
+<li><p>In many cases we just can’t, because these member functions are usually small
+enough that the compiler usually decides to inline them. If you try to print
+the <code>begin()</code> iterator for instance, you may get an error that looks
+something like this: <code>Cannot evaluate function -- may be inlined</code>.</p></li>
+<li><p>If the type you’re trying to print is an <em>incomplete type</em> e.g. if it’s not
+part of the process binary (it might be dynamically linked for instance),
+then you won’t even have access to any of the object’s members, in which
+case, the only way to refer to the object’s data members is by using pointer
+arithmetic.</p></li>
 </ol>
-<p>Notice also that <code>to_string()</code> doesn’t actually do anything here. It just returns the string <code>&quot;vector&quot;</code>. That’s because when you create a <code>children()</code> method, the output of <code>to_string()</code> represents the name of the printed list. It gets prepended (along with a succeeding <code>=</code> sign) to the output list resulting from the call to <code>children()</code>.</p>
-<p><code>children()</code> returns an object of the <code>VectorPrinter._iterator</code> class. This class conforms to the Python iterator protocol by implementing a <code>next()</code> method, which returns the next value of the vector (actually a name/value pair) and raises a <code>StopIteration</code> exception when no more entries are found in the vector. The <code>dereference()</code> method of <code>gdb.Value</code> returns the value pointed to by a pointer when the <code>gdb.Value</code> represents a pointer and raises an exception otherwise.</p>
-<p>To activate the pretty printer, we need to define a <em>lookup</em> function for our type and a registration function for our printer(s):</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> vec_lookup_function(val):
-  lookup_tag <span class="op">=</span> val.<span class="bu">type</span>.tag
-  <span class="cf">if</span> lookup_tag <span class="op">==</span> <span class="va">None</span>:
-    <span class="cf">return</span> <span class="va">None</span>
-
-  regex <span class="op">=</span> re.<span class="bu">compile</span>(<span class="st">&quot;^.*vector_base&lt;.*,.*&gt;$&quot;</span>)
-  <span class="cf">if</span> regex.match(lookup_tag):
-    <span class="cf">return</span> VectorPrinter(val)
-
-  <span class="cf">return</span> <span class="va">None</span>
-
-<span class="kw">def</span> register_libcxx_printers(objfile):
-  objfile.pretty_printers.append(vec_lookup_function)</code></pre></div>
-<p>The lookup function is called by GDB for every value it attempts to print. If the return value is not <code>None</code>, GDB uses it as a printer object for that value. In this case the <code>std::vector</code> lookup function inspects the value type tag. That’s the word that comes after a <code>class</code>, <code>struct</code> or <code>union</code> keywords in C++ i.e. it’s the class name. Since in <code>libc++</code>, <code>std::vector</code> unfolds to a type that has the word <code>vector_base</code> in it, it’s possible to recognize that type using a regular expression as shown above.</p>
-<p>Finally, we need to make sure GDB loads this file at startup. To do so, we need to make sure the printer module is in the <code>PYTHONPATH</code> and call the printer registration function in <code>~/.gdbinit</code>:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">python
-<span class="im">from</span> libcxx.printers <span class="im">import</span> register_libcxx_printers
-register_libcxx_printers(gdb)
-end</code></pre></div>
+<p>Notice also that <code>to_string()</code> doesn’t actually do anything here. It just
+returns the string <code>"vector"</code>. That’s because when you create a <code>children()</code>
+method, the output of <code>to_string()</code> represents the name of the printed list.
+It gets prepended (along with a succeeding <code>=</code> sign) to the output list
+resulting from the call to <code>children()</code>.</p>
+<p><code>children()</code> returns an object of the <code>VectorPrinter._iterator</code> class. This
+class conforms to the Python iterator protocol by implementing a <code>next()</code>
+method, which returns the next value of the vector (actually a name/value pair)
+and raises a <code>StopIteration</code> exception when no more entries are found in the
+vector. The <code>dereference()</code> method of <code>gdb.Value</code> returns the value pointed to
+by a pointer when the <code>gdb.Value</code> represents a pointer and raises an exception
+otherwise.</p>
+<p>To activate the pretty printer, we need to define a <em>lookup</em> function for our
+type and a registration function for our printer(s):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> vec_lookup_function(val):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  lookup_tag <span class="op">=</span> val.<span class="bu">type</span>.tag</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> lookup_tag <span class="op">==</span> <span class="va">None</span>:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  regex <span class="op">=</span> re.<span class="bu">compile</span>(<span class="st">&quot;^.*vector_base&lt;.*,.*&gt;$&quot;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> regex.match(lookup_tag):</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> VectorPrinter(val)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> register_libcxx_printers(objfile):</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  objfile.pretty_printers.append(vec_lookup_function)</span></code></pre></div>
+<p>The lookup function is called by GDB for every value it attempts to print. If
+the return value is not <code>None</code>, GDB uses it as a printer object for that value.
+In this case the <code>std::vector</code> lookup function inspects the value type tag.
+That’s the word that comes after a <code>class</code>, <code>struct</code> or <code>union</code> keywords in C++
+i.e. it’s the class name. Since in <code>libc++</code>, <code>std::vector</code> unfolds to a type
+that has the word <code>vector_base</code> in it, it’s possible to recognize that type
+using a regular expression as shown above.</p>
+<p>Finally, we need to make sure GDB loads this file at startup. To do so, we
+need to make sure the printer module is in the <code>PYTHONPATH</code> and call the printer
+registration function in <code>~/.gdbinit</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>python</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> libcxx.printers <span class="im">import</span> register_libcxx_printers</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>register_libcxx_printers(gdb)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>end</span></code></pre></div>
 <p>Here’s the output from GDB using this pretty printer:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
-<span class="er">$</span><span class="dv">1</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
-    [<span class="dv">0</span>] = <span class="dv">1</span>,
-    [<span class="dv">1</span>] = <span class="dv">2</span>,
-    [<span class="dv">2</span>] = <span class="dv">3</span>,
-    [<span class="dv">3</span>] = <span class="dv">4</span>,
-    [<span class="dv">4</span>] = <span class="dv">5</span>
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>At any point, if you need to print the <em>raw</em> version of a vector, you can use the <code>/r</code> switch:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print /r v
-<span class="er">$</span><span class="dv">2</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
-    __begin_ = <span class="bn">0x100103a70</span>,
-    __end_ = <span class="bn">0x100103a84</span>,
-    __end_cap_ = {
-      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
-        __first_ = <span class="bn">0x100103a90</span>
-      }, &lt;No data fields&gt;}
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>There are different variations for how to create printer classes and lookup and registration function, but I wanted to keep things simple in this tutorial. For more information, check out the <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API documentation</a>.</p>
-<div class="footnotes">
+<div class="sourceCode" id="cb6"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print v</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">1</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> vector <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">=</span> <span class="dv">1</span><span class="op">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="op">=</span> <span class="dv">2</span><span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">2</span><span class="op">]</span> <span class="op">=</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">3</span><span class="op">]</span> <span class="op">=</span> <span class="dv">4</span><span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">4</span><span class="op">]</span> <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>At any point, if you need to print the <em>raw</em> version of a vector, you can use
+the <code>/r</code> switch:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print <span class="op">/</span>r v</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">2</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common<span class="op">&lt;</span><span class="kw">true</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    __begin_ <span class="op">=</span> <span class="bn">0x100103a70</span><span class="op">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    __end_ <span class="op">=</span> <span class="bn">0x100103a84</span><span class="op">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    __end_cap_ <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        __first_ <span class="op">=</span> <span class="bn">0x100103a90</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>There are different variations for how to create printer classes and lookup and
+registration function, but I wanted to keep things simple in this tutorial.
+For more information, check out the <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API
+documentation</a>.</p>
+<section class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1"><p>I’m using Clang’s <code>libc++</code> standard library here. If you use GCC’s <code>libstdc++</code>, your mileage may vary.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>GDB has to be configured with <code>--with-python</code> for this to work.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>The process under debugging.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>For <code>libstdc++</code>, you can use any of the tools mentioned <a href="https://sourceware.org/gdb/wiki/STLSupport">here</a>. I should also mention that <a href="https://lldb.llvm.org">LLDB</a> already prints <code>libc++</code>’s STL containers pretty decently. Check it out before rolling out your own GDB printers.<a href="#fnref4">↩</a></p></li>
+<li id="fn1" role="doc-endnote"><p>I’m using Clang’s <code>libc++</code> standard library here. If you use GCC’s
+<code>libstdc++</code>, your mileage may vary.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>GDB has to be configured with <code>--with-python</code> for this to work.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>The process under debugging.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>For <code>libstdc++</code>, you can use any of the tools mentioned
+<a href="https://sourceware.org/gdb/wiki/STLSupport">here</a>. I should also
+mention that <a href="https://lldb.llvm.org">LLDB</a> already prints <code>libc++</code>’s STL
+containers pretty decently. Check it out before rolling out your own
+GDB printers.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</div>
+</section>
   </p>
 
   <p class="tag-list">
@@ -267,8 +340,6 @@ end</code></pre></div>
       <!--[if gt IE 7]><!-->
       <aside id="socialbar">
         <section>
-          <a href="https://google.com/+HaithamGad" target="_blank" title="Google+">
-            <i class="fa fa-google-plus-box"></i></a>
           <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
             <i class="fa fa-twitter-box"></i></a>
           <a href="https://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-box"></i></a>
@@ -301,17 +372,16 @@ end</code></pre></div>
     <script src="../../js/plugins.js"></script>
     <script src="../../js/main.js"></script>
 
-    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-45318006-1"></script>
     <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-      ga('create', 'UA-45318006-1', 'hgad.net');
-      ga('send', 'pageview');
-
+      gtag('config', 'UA-45318006-1');
     </script>
+
   </body>
 </html>
 

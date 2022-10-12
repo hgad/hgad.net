@@ -9,8 +9,6 @@
         if ((host == window.location.host) && (window.location.protocol != "https:"))
             window.location.protocol = "https";
     </script>
-    
-    <script data-ad-client="ca-pub-9639478410810022" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
     <link rel="canonical" href="https://hgad.net/" />
 
@@ -121,199 +119,319 @@
 
 <section class="post-body">
   <p>
-  <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the Standard Library algorithms and settle for rather suboptimal handcrafted solutions that get the job done. I know this, because I myself have done it more than I’d care to admit. The excuse is usually that the problem does not fit any of these neat, but somewhat detached, algorithms.</p>
-<p>STL algorithms are actually very handy. They give names to commonly occurring (and often cryptic) raw loops<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>. Until recently, however, they required too much work to use effectively. Thankfully, with the introduction of type inference and lambda expressions in C++11, STL algorithms are now a lot easier to use.</p>
-<p>In this post, I’ll be demonstrating the versatility of STL algorithms by implementing common sorting algorithms (insertion sort, in-place merge sort and randomized quicksort) using STL algorithms as building blocks<a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a>. Sorting is the kind of problem that requires moving data around, and when implemented using raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe this code more succinctly and possibly more efficiently.</p>
+  <p>Under tight schedules and looming deadlines, C++ programmers tend to ignore the
+Standard Library algorithms and settle for rather suboptimal handcrafted
+solutions that get the job done. I know this, because I myself have done it more
+than I’d care to admit. The excuse is usually that the problem does not fit any
+of these neat, but somewhat detached, algorithms.</p>
+<p>STL algorithms are actually very handy. They give names to commonly occurring
+(and often cryptic) raw loops<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Until recently, however, they required
+too much work to use effectively. Thankfully, with the introduction of type
+inference and lambda expressions in C++11, STL algorithms are now a lot easier
+to use.</p>
+<p>In this post, I’ll be demonstrating the versatility of STL algorithms by
+implementing common sorting algorithms (insertion sort, in-place merge sort and
+randomized quicksort) using STL algorithms as building blocks<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>. Sorting is
+the kind of problem that requires moving data around, and when implemented using
+raw loops, they tend to be unreadable. We’ll see how STL algorithms can describe
+this code more succinctly and possibly more efficiently.</p>
 <h3 id="insertion-sort">Insertion Sort</h3>
-<p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="cf">if</span> (first == last) {
-    <span class="cf">return</span>;
-  }
-
-  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; j = <span class="bu">std::</span>next(first); j != last; ++j) {
-    <span class="kw">auto</span> key = *j;
-    <span class="kw">auto</span> i = j;
-    <span class="cf">while</span> (i != first &amp;&amp; *<span class="bu">std::</span>prev(i) &gt; key) {
-      *i = *<span class="bu">std::</span>prev(i);
-      --i;
-    }
-
-    *i = key;
-  }
-}</code></pre></div>
-<p>It’s compact and generic, but aside from the function name, it’s completely non-obvious what the nested loops are doing at first sight. Let’s see how to make this more readable.</p>
-<p>By examining the inner loop, it looks like it searches backwards in the given range for a value less than or equal to <code>key</code>. It starts from the value just before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one position to the right. Once the value is found (or we reach the beginning of the range), the value at <code>j</code> (i.e. <code>key</code>) is then inserted.</p>
-<p>Let’s pretend for a moment that the range is being scanned in the forward rather than the backward direction. In this case, all we need is a function that searches a range for an element (call it <code>k</code>) that satisfies a certain predicate. When <code>k</code> is found (or we reach the end of the range), the function has to insert the first element of the range before <code>k</code> and shift all elements between them one position to the left:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
-<span class="dt">void</span> insert_first_before(I first, I last, P pred) {
-  <span class="kw">auto</span>&amp;&amp; second = <span class="bu">std::</span>next(first);
-  <span class="bu">std::</span>rotate(first, second,
-    <span class="bu">std::</span>find_if(second, last, pred));
-}</code></pre></div>
-<p>If you’re surprised to see <code>std::rotate()</code> being used here, you’re not alone. Sean Parent’s GoingNative 2013 <a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in this respect. Turns out <code>std::rotate()</code> is one of the handiest algorithms in the Standard Library. It takes three iterators: <code>first</code>, <code>middle</code> and <code>last</code>. It performs a left-rotate operation such that the elements between <code>middle</code> and <code>last</code> are moved to the beginning of the range, and the elements between <code>first</code> and <code>middle</code> are moved to the end of the range. It also returns an iterator to the beginning of the second range after rotation, which often comes in handy<a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>. Essentially, every time you find yourself manually shifting elements, there’s almost always a better way to achieve the same effect using <code>std::rotate()</code><a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a>.</p>
-<p>Going back to our problem, what we originally needed was an algorithm that scans a range backwards not forwards. This can be achieved easily using <code>reverse_iterator</code>s:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> P&gt;
-<span class="dt">void</span> insert_last_after(I first, I last, P pred) {
-  insert_first_before(
-    <span class="bu">std::</span>make_reverse_iterator(last),
-    <span class="bu">std::</span>make_reverse_iterator(first), pred);
-}</code></pre></div>
-<p>You may notice that the function name isn’t ideal. The word <code>last</code> in the function name refers to the last element in the range, while <code>last</code> the formal parameter, refers to the element one past the end of the range.</p>
+<p>This is a C++ adaptation of insertion sort as it appears in CLRS<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> insertion_sort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>first <span class="op">==</span> last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> j <span class="op">=</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">);</span> j <span class="op">!=</span> last<span class="op">;</span> <span class="op">++</span>j<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> key <span class="op">=</span> <span class="op">*</span>j<span class="op">;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> i <span class="op">=</span> j<span class="op">;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="op">(</span>i <span class="op">!=</span> first <span class="op">&amp;&amp;</span> <span class="op">*</span><span class="bu">std::</span>prev<span class="op">(</span>i<span class="op">)</span> <span class="op">&gt;</span> key<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      <span class="op">*</span>i <span class="op">=</span> <span class="op">*</span><span class="bu">std::</span>prev<span class="op">(</span>i<span class="op">);</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>      <span class="op">--</span>i<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>i <span class="op">=</span> key<span class="op">;</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>It’s compact and generic, but aside from the function name, it’s completely
+non-obvious what the nested loops are doing at first sight. Let’s see how to
+make this more readable.</p>
+<p>By examining the inner loop, it looks like it searches backwards in the given
+range for a value less than or equal to <code>key</code>. It starts from the value just
+before <code>j</code> down to <code>0</code>. In doing so, it also shifts all the values it scans one
+position to the right. Once the value is found (or we reach the beginning of the
+range), the value at <code>j</code> (i.e. <code>key</code>) is then inserted.</p>
+<p>Let’s pretend for a moment that the range is being scanned in the forward rather
+than the backward direction. In this case, all we need is a function that
+searches a range for an element (call it <code>k</code>) that satisfies a certain
+predicate. When <code>k</code> is found (or we reach the end of the range), the function
+has to insert the first element of the range before <code>k</code> and shift all elements
+between them one position to the left:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">,</span> <span class="kw">typename</span> P<span class="op">&gt;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> insert_first_before<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">,</span> P pred<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> second <span class="op">=</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">);</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>rotate<span class="op">(</span>first<span class="op">,</span> second<span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>find_if<span class="op">(</span>second<span class="op">,</span> last<span class="op">,</span> pred<span class="op">));</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>If you’re surprised to see <code>std::rotate()</code> being used here, you’re not alone.
+Sean Parent’s GoingNative 2013
+<a href="https://www.youtube.com/watch?v=qH6sSOr-yk8">talk</a> was an eye-opener for me in
+this respect. Turns out <code>std::rotate()</code> is one of the handiest algorithms in the
+Standard Library. It takes three iterators: <code>first</code>, <code>middle</code> and <code>last</code>. It
+performs a left-rotate operation such that the elements between <code>middle</code> and
+<code>last</code> are moved to the beginning of the range, and the elements between <code>first</code>
+and <code>middle</code> are moved to the end of the range. It also returns an iterator to
+the beginning of the second range after rotation, which often comes in
+handy<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>. Essentially, every time you find yourself manually
+shifting elements, there’s almost always a better way to achieve the same effect
+using <code>std::rotate()</code><a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>.</p>
+<p>Going back to our problem, what we originally needed was an algorithm that scans
+a range backwards not forwards. This can be achieved easily using
+<code>reverse_iterator</code>s:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">,</span> <span class="kw">typename</span> P<span class="op">&gt;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> insert_last_after<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">,</span> P pred<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  insert_first_before<span class="op">(</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>make_reverse_iterator<span class="op">(</span>last<span class="op">),</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>make_reverse_iterator<span class="op">(</span>first<span class="op">),</span> pred<span class="op">);</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>You may notice that the function name isn’t ideal. The word <code>last</code> in the
+function name refers to the last element in the range, while <code>last</code> the formal
+parameter, refers to the element one past the end of the range.</p>
 <p>In any case, given <code>insert_last_after()</code>, <code>insertion_sort()</code> becomes trivial:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="cf">if</span> (first == last) {
-    <span class="cf">return</span>;
-  }
-
-  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; iter = <span class="bu">std::</span>next(first); iter != last; ++iter) {
-    insert_last_after(first, <span class="bu">std::</span>next(iter),
-      [iter] (<span class="kw">auto</span>&amp;&amp; value) { <span class="cf">return</span> value &lt;= *iter; });
-  }
-}</code></pre></div>
-<p>Notice that the arguments to <code>insert_last_after()</code> are initialized with iterators one position to the right of where the <code>reverse_iterator</code>s are supposed to point. This is because <code>reverse_iterator</code>s refer to the position right before the one they’re initialized with.</p>
-<p>But do we really need a linear search? If we notice the loop invariant that the range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary search instead. This can be achieved directly using <code>std::upper_bound()</code>. Once that element is found, we need to perform a rotate to insert the element at <code>iter</code> before it:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> insertion_sort(I first, I last) {
-  <span class="cf">if</span> (first == last) {
-    <span class="cf">return</span>;
-  }
-
-  <span class="cf">for</span> (<span class="kw">auto</span>&amp;&amp; iter = <span class="bu">std::</span>next(first); iter != last; ++iter) {
-    <span class="bu">std::</span>rotate(<span class="bu">std::</span>upper_bound(first, iter, *iter),
-                iter, <span class="bu">std::</span>next(iter));
-  }
-}</code></pre></div>
-<p><code>std::upper_bound()</code> returns the first element in a range that compares greater than a look-up key (or <code>last</code> if no such element exists). It does that in <em>O(log n)</em> time by requiring the range to be sorted or at least partitioned around the look-up key.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> insertion_sort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>first <span class="op">==</span> last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> iter <span class="op">=</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">);</span> iter <span class="op">!=</span> last<span class="op">;</span> <span class="op">++</span>iter<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    insert_last_after<span class="op">(</span>first<span class="op">,</span> <span class="bu">std::</span>next<span class="op">(</span>iter<span class="op">),</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">[</span>iter<span class="op">]</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> value<span class="op">)</span> <span class="op">{</span> <span class="cf">return</span> value <span class="op">&lt;=</span> <span class="op">*</span>iter<span class="op">;</span> <span class="op">});</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Notice that the arguments to <code>insert_last_after()</code> are initialized with
+iterators one position to the right of where the <code>reverse_iterator</code>s are
+supposed to point. This is because <code>reverse_iterator</code>s refer to the position
+right before the one they’re initialized with.</p>
+<p>But do we really need a linear search? If we notice the loop invariant that the
+range from <code>first</code> to <code>j</code> is always sorted, we can simply perform a binary
+search instead. This can be achieved directly using <code>std::upper_bound()</code>. Once
+that element is found, we need to perform a rotate to insert the element at
+<code>iter</code> before it:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> insertion_sort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>first <span class="op">==</span> last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> iter <span class="op">=</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">);</span> iter <span class="op">!=</span> last<span class="op">;</span> <span class="op">++</span>iter<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>rotate<span class="op">(</span><span class="bu">std::</span>upper_bound<span class="op">(</span>first<span class="op">,</span> iter<span class="op">,</span> <span class="op">*</span>iter<span class="op">),</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                iter<span class="op">,</span> <span class="bu">std::</span>next<span class="op">(</span>iter<span class="op">));</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p><code>std::upper_bound()</code> returns the first element in a range that compares greater
+than a look-up key (or <code>last</code> if no such element exists). It does that in
+<em>O(log n)</em> time by requiring the range to be sorted or at least partitioned
+around the look-up key.</p>
 <h3 id="in-place-merge-sort">In-Place Merge Sort</h3>
-<p>The canonical implementation of merge sort partitions the given range in half and recursively sorts each partition. It then performs the merge step in a separate range from those of the two partitions. In-place merge sort, on the other hand, performs the merge step in-place. The two partitions are kept adjacent in memory constituting one big range. The two elements at the beginning of each partition are compared and the smallest is moved to the beginning of the combined range shifting elements to the right as necessary.</p>
+<p>The canonical implementation of merge sort partitions the given range in half
+and recursively sorts each partition. It then performs the merge step in a
+separate range from those of the two partitions. In-place merge sort, on the
+other hand, performs the merge step in-place. The two partitions are kept
+adjacent in memory constituting one big range. The two elements at the beginning
+of each partition are compared and the smallest is moved to the beginning of the
+combined range shifting elements to the right as necessary.</p>
 <p>Following is the top-level <code>mergesort()</code> procedure:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> mergesort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; size = <span class="bu">std::</span>distance(first, last);
-  <span class="cf">if</span> (size &lt; <span class="dv">2</span>) {
-    <span class="cf">return</span>;
-  }
-
-  <span class="kw">auto</span>&amp;&amp; mid = first + size / <span class="dv">2</span> + size % <span class="dv">2</span>;
-
-  mergesort(first, mid);
-  mergesort(mid, last);
-  merge(first, mid, last);
-}</code></pre></div>
-<p>As described, unless the given range has only one element, <code>mergesort()</code> partitions the given range in half and recursively sorts each partition. It finally calls the in-place <code>merge()</code> procedure to merge the two sorted partitions. The two partitions are adjacent in memory with iterator <code>mid</code> pointing at the beginning of the second partition.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> mergesort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> size <span class="op">=</span> <span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">);</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>size <span class="op">&lt;</span> <span class="dv">2</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> mid <span class="op">=</span> first <span class="op">+</span> size <span class="op">/</span> <span class="dv">2</span> <span class="op">+</span> size <span class="op">%</span> <span class="dv">2</span><span class="op">;</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  mergesort<span class="op">(</span>first<span class="op">,</span> mid<span class="op">);</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  mergesort<span class="op">(</span>mid<span class="op">,</span> last<span class="op">);</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  merge<span class="op">(</span>first<span class="op">,</span> mid<span class="op">,</span> last<span class="op">);</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>As described, unless the given range has only one element, <code>mergesort()</code>
+partitions the given range in half and recursively sorts each partition.
+It finally calls the in-place <code>merge()</code> procedure to merge the two sorted
+partitions. The two partitions are adjacent in memory with iterator <code>mid</code>
+pointing at the beginning of the second partition.</p>
 <p>Here’s one way to implement the in-place <code>merge()</code> procedure:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> merge(I first, I mid, I last) {
-  <span class="cf">while</span> (first != mid &amp;&amp; mid != last) {
-    <span class="kw">auto</span> iter = mid;
-    first = <span class="bu">std::</span>upper_bound(first, mid, *mid);
-    mid = <span class="bu">std::</span>upper_bound(mid, last, *first);
-    <span class="bu">std::</span>rotate(first, iter, mid);
-  }
-}</code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> merge<span class="op">(</span>I first<span class="op">,</span> I mid<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> <span class="op">(</span>first <span class="op">!=</span> mid <span class="op">&amp;&amp;</span> mid <span class="op">!=</span> last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> iter <span class="op">=</span> mid<span class="op">;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    first <span class="op">=</span> <span class="bu">std::</span>upper_bound<span class="op">(</span>first<span class="op">,</span> mid<span class="op">,</span> <span class="op">*</span>mid<span class="op">);</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    mid <span class="op">=</span> <span class="bu">std::</span>upper_bound<span class="op">(</span>mid<span class="op">,</span> last<span class="op">,</span> <span class="op">*</span>first<span class="op">);</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>rotate<span class="op">(</span>first<span class="op">,</span> iter<span class="op">,</span> mid<span class="op">);</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
 <p>In every iteration, <code>merge()</code> does the following:</p>
-<ol style="list-style-type: decimal">
-<li><p>It skips over the first few elements in the first partition that are less than the first element of the second partition (i.e. <code>*mid</code>). These elements are essentially in their correct final location, so no need to move them. It does that by calling <code>std::upper_bound()</code> on the first partition and assigning the result back to <code>first</code>.</p></li>
-<li><p>Next, it does the same thing for the second partition. It skips over the first few elements in the second partition that are greater than the value pointed at by <code>first</code>. This time it does it because these elements are all going to have to be moved before <code>first</code>, so there’s no point in moving them one-by-one if they can be moved as a batch.</p></li>
+<ol type="1">
+<li><p>It skips over the first few elements in the first partition that are less
+than the first element of the second partition (i.e. <code>*mid</code>). These elements
+are essentially in their correct final location, so no need to move them.
+It does that by calling <code>std::upper_bound()</code> on the first partition and
+assigning the result back to <code>first</code>.</p></li>
+<li><p>Next, it does the same thing for the second partition. It skips over the
+first few elements in the second partition that are greater than the value
+pointed at by <code>first</code>. This time it does it because these elements are all
+going to have to be moved before <code>first</code>, so there’s no point in moving them
+one-by-one if they can be moved as a batch.</p></li>
 <li><p>Finally, it calls <code>std::rotate()</code> to move those elements before <code>first</code>.</p></li>
 </ol>
-<p>The loop stops when either of the two moving partitions is totally consumed. Neat, isn’t it?!<a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a></p>
+<p>The loop stops when either of the two moving partitions is totally consumed.
+Neat, isn’t it?!<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
 <h3 id="randomized-quicksort">Randomized Quicksort</h3>
-<p>Quicksort is by far the most widely used sorting algorithm. Even though its worst case running time is <em>O(n<sup>2</sup>)</em>, its expected running time is <em>O(n log n)</em>. It works by partitioning the given range around some pivot chosen from the range (usually the first element). It then recursively partitions the two resulting ranges until the original range is fully sorted. The choice of a pivot from a fixed location every time is known to degrade the algorithm’s performance to its worst case when the input range is originally sorted (forwards or backwards). A common way to mitigate this effect is to choose the pivot randomly among the range elements every time. This last variation is commonly known as randomized quicksort.</p>
-<p>Another important aspect about quicksort is that it doesn’t guarantee the stability of the resulting range unless the partitioning algorithm is stable. This means that equivalent elements might not end up sorted in the same order they used to be in originally. That’s okay for primitive types, but it’s not always okay for composite types.</p>
-<p>Stable partitioning is typically more expensive and is not always needed, so it would be nice to have two versions of <code>quicksort()</code>: a stable and an unstable version. This suggests that the partitioning algorithm should be a parameter to <code>quicksort()</code>, but that would make the interface very inconvenient to use. Luckily, we can hide these petty details behind good looking interfaces:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> quicksort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; engine = <span class="bu">std::</span>default_random_engine(
-    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now().time_since_epoch().count());
-
-  quicksort_impl(first, last, <span class="bu">std::</span>move(engine),
-    quicksort_partition&lt;I, <span class="kw">decltype</span>(<span class="bu">std::</span>distance(first, last))&gt;);
-}
-
-<span class="kw">template</span> &lt;<span class="kw">typename</span> I&gt;
-<span class="dt">void</span> stable_quicksort(I first, I last) {
-  <span class="kw">auto</span>&amp;&amp; engine = <span class="bu">std::</span>default_random_engine(
-    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now().time_since_epoch().count());
-
-  quicksort_impl(first, last, <span class="bu">std::</span>move(engine),
-    quicksort_stable_partition&lt;I, <span class="kw">decltype</span>(<span class="bu">std::</span>distance(first, last))&gt;);
-}</code></pre></div>
-<p>Both functions initialize a random number generation engine from a unique seed (the current time) and pass it along with the right partitioning algorithm to <code>quicksort_impl()</code> which does the real work.</p>
-<p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could directly be used as partition procedures for quicksort, but that’s not possible.</p>
-<p>Both <code>std::partition</code> and <code>std::stable_partition</code> take a range and a unary predicate. They partition the range in-place into two ranges such that every element that satisfies the predicate ends up in the first range and every element that doesn’t satisfy the predicate ends up in the second range. They both return an iterator to the beginning of the second range. Obviously, <code>std::stable_partition</code> does this in a stable manner!</p>
-<p>Quicksort partitioning requires that the pivot be chosen from the given range and that it ends up exactly between the two resulting ranges. STL partitioning algorithms do not guarantee that the pivot will end up between the two partitions, even if it exists in the range.</p>
+<p>Quicksort is by far the most widely used sorting algorithm. Even though its
+worst case running time is <em>O(n<sup>2</sup>)</em>, its expected running time is
+<em>O(n log n)</em>. It works by partitioning the given range around some pivot chosen
+from the range (usually the first element). It then recursively partitions the
+two resulting ranges until the original range is fully sorted. The choice of a
+pivot from a fixed location every time is known to degrade the algorithm’s
+performance to its worst case when the input range is originally sorted
+(forwards or backwards). A common way to mitigate this effect is to choose the
+pivot randomly among the range elements every time. This last variation is
+commonly known as randomized quicksort.</p>
+<p>Another important aspect about quicksort is that it doesn’t guarantee the
+stability of the resulting range unless the partitioning algorithm is stable.
+This means that equivalent elements might not end up sorted in the same order
+they used to be in originally. That’s okay for primitive types, but it’s not
+always okay for composite types.</p>
+<p>Stable partitioning is typically more expensive and is not always needed, so it
+would be nice to have two versions of <code>quicksort()</code>: a stable and an unstable
+version. This suggests that the partitioning algorithm should be a parameter to
+<code>quicksort()</code>, but that would make the interface very inconvenient to use.
+Luckily, we can hide these petty details behind good looking interfaces:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> quicksort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> engine <span class="op">=</span> <span class="bu">std::</span>default_random_engine<span class="op">(</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now<span class="op">().</span>time_since_epoch<span class="op">().</span>count<span class="op">());</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  quicksort_impl<span class="op">(</span>first<span class="op">,</span> last<span class="op">,</span> <span class="bu">std::</span>move<span class="op">(</span>engine<span class="op">),</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    quicksort_partition<span class="op">&lt;</span>I<span class="op">,</span> <span class="kw">decltype</span><span class="op">(</span><span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">))&gt;);</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> stable_quicksort<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> engine <span class="op">=</span> <span class="bu">std::</span>default_random_engine<span class="op">(</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now<span class="op">().</span>time_since_epoch<span class="op">().</span>count<span class="op">());</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>  quicksort_impl<span class="op">(</span>first<span class="op">,</span> last<span class="op">,</span> <span class="bu">std::</span>move<span class="op">(</span>engine<span class="op">),</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    quicksort_stable_partition<span class="op">&lt;</span>I<span class="op">,</span> <span class="kw">decltype</span><span class="op">(</span><span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">))&gt;);</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Both functions initialize a random number generation engine from a unique seed
+(the current time) and pass it along with the right partitioning algorithm to
+<code>quicksort_impl()</code> which does the real work.</p>
+<p>It’s tempting to think that <code>std::partition</code> and <code>std::stable_partition</code> could
+directly be used as partition procedures for quicksort, but that’s not possible.</p>
+<p>Both <code>std::partition</code> and <code>std::stable_partition</code> take a range and a unary
+predicate. They partition the range in-place into two ranges such that every
+element that satisfies the predicate ends up in the first range and every
+element that doesn’t satisfy the predicate ends up in the second range. They
+both return an iterator to the beginning of the second range. Obviously,
+<code>std::stable_partition</code> does this in a stable manner!</p>
+<p>Quicksort partitioning requires that the pivot be chosen from the given range
+and that it ends up exactly between the two resulting ranges. STL partitioning
+algorithms do not guarantee that the pivot will end up between the two
+partitions, even if it exists in the range.</p>
 <p>Consider the following range:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">10</span>, <span class="dv">7</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="dv">8</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">10</span><span class="op">,</span> <span class="dv">7</span><span class="op">,</span> <span class="dv">34</span><span class="op">,</span> <span class="dv">9</span><span class="op">]</span></span></code></pre></div>
 <p>Here’s a perfectly valid partitioning using a “less-than 9” predicate:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">[<span class="dv">8</span>, <span class="dv">2</span>, <span class="dv">7</span>, <span class="dv">10</span>, <span class="dv">34</span>, <span class="dv">9</span>]</code></pre></div>
-<p>The algorithm would return an iterator to <code>10</code>. Every element before this iterator satisfies the predicate and every element starting at that iterator does not satisfy the predicate. Even though <code>9</code> is in the range, it’s not required to end up between the two partitions.</p>
-<p>So we need to implement two quicksort partitioning procedures that take the pivot offset and perform partitioning as required by the quicksort algorithm, possibly making use of STL partitioning algorithms:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
-I quicksort_partition(I first, I last, S offset) {
-  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; <span class="bu">std::</span>distance(first, last));
-
-  <span class="bu">std::</span>iter_swap(first, <span class="bu">std::</span>next(first, offset));
-
-  <span class="kw">auto</span>&amp;&amp; ret =
-    <span class="bu">std::</span>prev(<span class="bu">std::</span>partition(next(first), last,
-      [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="cf">return</span> val &lt; *first; }));
-
-  <span class="bu">std::</span>iter_swap(first, ret);
-
-  <span class="cf">return</span> ret;
-}
-
-<span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> S&gt;
-I quicksort_stable_partition(I first, I last, S offset) {
-  assert(offset &gt;= <span class="dv">0</span> &amp;&amp; offset &lt; <span class="bu">std::</span>distance(first, last));
-
-  <span class="kw">auto</span>&amp;&amp; pivot_iter = <span class="bu">std::</span>next(first, offset);
-  <span class="bu">std::</span>rotate(first, pivot_iter, <span class="bu">std::</span>next(pivot_iter));
-
-  <span class="kw">auto</span>&amp;&amp; ret =
-    <span class="bu">std::</span>prev(<span class="bu">std::</span>stable_partition(<span class="bu">std::</span>next(first), last,
-           [first] (<span class="kw">auto</span>&amp;&amp; val) { <span class="cf">return</span> val &lt; *first; }));
-
-  <span class="bu">std::</span>rotate(first, <span class="bu">std::</span>next(first), <span class="bu">std::</span>next(ret));
-
-  <span class="cf">return</span> ret;
-}</code></pre></div>
-<p>The unstable partitioning function swaps the pivot with first element of the range, performs partitioning over the full range excluding the pivot, swaps the pivot back with the last element in the first range and returns an iterator to that location.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">[</span><span class="dv">8</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">7</span><span class="op">,</span> <span class="dv">10</span><span class="op">,</span> <span class="dv">34</span><span class="op">,</span> <span class="dv">9</span><span class="op">]</span></span></code></pre></div>
+<p>The algorithm would return an iterator to <code>10</code>. Every element before this
+iterator satisfies the predicate and every element starting at that iterator
+does not satisfy the predicate. Even though <code>9</code> is in the range, it’s not
+required to end up between the two partitions.</p>
+<p>So we need to implement two quicksort partitioning procedures that take the
+pivot offset and perform partitioning as required by the quicksort algorithm,
+possibly making use of STL partitioning algorithms:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">,</span> <span class="kw">typename</span> S<span class="op">&gt;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>I quicksort_partition<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">,</span> S offset<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="ot">assert</span><span class="op">(</span>offset <span class="op">&gt;=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> offset <span class="op">&lt;</span> <span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">));</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>iter_swap<span class="op">(</span>first<span class="op">,</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">,</span> offset<span class="op">));</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> ret <span class="op">=</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>prev<span class="op">(</span><span class="bu">std::</span>partition<span class="op">(</span>next<span class="op">(</span>first<span class="op">),</span> last<span class="op">,</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">[</span>first<span class="op">]</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> val<span class="op">)</span> <span class="op">{</span> <span class="cf">return</span> val <span class="op">&lt;</span> <span class="op">*</span>first<span class="op">;</span> <span class="op">}));</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>iter_swap<span class="op">(</span>first<span class="op">,</span> ret<span class="op">);</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ret<span class="op">;</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">,</span> <span class="kw">typename</span> S<span class="op">&gt;</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>I quicksort_stable_partition<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">,</span> S offset<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="ot">assert</span><span class="op">(</span>offset <span class="op">&gt;=</span> <span class="dv">0</span> <span class="op">&amp;&amp;</span> offset <span class="op">&lt;</span> <span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">));</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> pivot_iter <span class="op">=</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">,</span> offset<span class="op">);</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>rotate<span class="op">(</span>first<span class="op">,</span> pivot_iter<span class="op">,</span> <span class="bu">std::</span>next<span class="op">(</span>pivot_iter<span class="op">));</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span><span class="op">&amp;&amp;</span> ret <span class="op">=</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>prev<span class="op">(</span><span class="bu">std::</span>stable_partition<span class="op">(</span><span class="bu">std::</span>next<span class="op">(</span>first<span class="op">),</span> last<span class="op">,</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>           <span class="op">[</span>first<span class="op">]</span> <span class="op">(</span><span class="kw">auto</span><span class="op">&amp;&amp;</span> val<span class="op">)</span> <span class="op">{</span> <span class="cf">return</span> val <span class="op">&lt;</span> <span class="op">*</span>first<span class="op">;</span> <span class="op">}));</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>rotate<span class="op">(</span>first<span class="op">,</span> <span class="bu">std::</span>next<span class="op">(</span>first<span class="op">),</span> <span class="bu">std::</span>next<span class="op">(</span>ret<span class="op">));</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ret<span class="op">;</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>The unstable partitioning function swaps the pivot with first element of the
+range, performs partitioning over the full range excluding the pivot, swaps the
+pivot back with the last element in the first range and returns an iterator to
+that location.</p>
 <p><code>std::iter_swap()</code> swaps range elements by iterators rather than references.</p>
-<p>The stable partitioning function however cannot swap elements arbitrarily in the range because this changes their relative order, so it needs to use <code>std::rotate()</code> to bring the pivot to the front and back to its final location.</p>
+<p>The stable partitioning function however cannot swap elements arbitrarily in the
+range because this changes their relative order, so it needs to use
+<code>std::rotate()</code> to bring the pivot to the front and back to its final location.</p>
 <p>The remaining piece now is <code>quicksort_impl()</code>:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="kw">template</span> &lt;<span class="kw">typename</span> I, <span class="kw">typename</span> E, <span class="kw">typename</span> F&gt;
-<span class="dt">void</span> quicksort_impl(I first, I last, E&amp;&amp; engine, F partitioner) {
-  <span class="kw">auto</span> size = <span class="bu">std::</span>distance(first, last);
-  <span class="cf">if</span> (size &lt; <span class="dv">2</span>) {
-    <span class="cf">return</span>;
-  }
-
-  <span class="bu">std::</span>uniform_int_distribution&lt;<span class="kw">decltype</span>(size)&gt;
-    distribution(<span class="dv">0</span>, size - <span class="dv">1</span>);
-
-  <span class="kw">auto</span> mid = partitioner(first, last, distribution(engine));
-  quicksort_impl(first, mid, engine, partitioner);
-  quicksort_impl(<span class="bu">std::</span>next(mid), last, engine, partitioner);
-}</code></pre></div>
-<p>It simply takes the random number generation engine and partitioning algorithm from the convenience wrappers, generates a uniformly distributed random index in the given range and passes it as a pivot offset to the right partitioning algorithm. It gets back an iterator to the middle of the partitioned range and recursively sorts the resulting two partitions.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">template</span> <span class="op">&lt;</span><span class="kw">typename</span> I<span class="op">,</span> <span class="kw">typename</span> E<span class="op">,</span> <span class="kw">typename</span> F<span class="op">&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> quicksort_impl<span class="op">(</span>I first<span class="op">,</span> I last<span class="op">,</span> E<span class="op">&amp;&amp;</span> engine<span class="op">,</span> F partitioner<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span> size <span class="op">=</span> <span class="bu">std::</span>distance<span class="op">(</span>first<span class="op">,</span> last<span class="op">);</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="op">(</span>size <span class="op">&lt;</span> <span class="dv">2</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span><span class="op">;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>uniform_int_distribution<span class="op">&lt;</span><span class="kw">decltype</span><span class="op">(</span>size<span class="op">)&gt;</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">(</span><span class="dv">0</span><span class="op">,</span> size <span class="op">-</span> <span class="dv">1</span><span class="op">);</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  <span class="kw">auto</span> mid <span class="op">=</span> partitioner<span class="op">(</span>first<span class="op">,</span> last<span class="op">,</span> distribution<span class="op">(</span>engine<span class="op">));</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  quicksort_impl<span class="op">(</span>first<span class="op">,</span> mid<span class="op">,</span> engine<span class="op">,</span> partitioner<span class="op">);</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  quicksort_impl<span class="op">(</span><span class="bu">std::</span>next<span class="op">(</span>mid<span class="op">),</span> last<span class="op">,</span> engine<span class="op">,</span> partitioner<span class="op">);</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>It simply takes the random number generation engine and partitioning algorithm
+from the convenience wrappers, generates a uniformly distributed random index in
+the given range and passes it as a pivot offset to the right partitioning
+algorithm. It gets back an iterator to the middle of the partitioned range and
+recursively sorts the resulting two partitions.</p>
 <h3 id="conclusion">Conclusion</h3>
-<p>We saw variations of three common sorting algorithms implemented generically and compactly using STL algorithms. In general, STL algorithms are more applicable than they look. The key to utilizing them is to always ask whether the raw loop I’m about to write (or the one I’m reading) can be replaced by a packaged STL algorithm. You’d be surprised how many times this question can be answered affirmatively.</p>
-<div class="footnotes">
+<p>We saw variations of three common sorting algorithms implemented generically and
+compactly using STL algorithms. In general, STL algorithms are more applicable
+than they look. The key to utilizing them is to always ask whether the raw loop
+I’m about to write (or the one I’m reading) can be replaced by a packaged
+STL algorithm. You’d be surprised how many times this question can be answered
+affirmatively.</p>
+<section class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1"><p>``One thing every sorcerer will tell you is if you have the name of a spirit, you have power over it.’’ —Gerald Jay Sussman<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>Obviously I won’t be using <code>std::sort()</code>!<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>Introduction to Algorithms, by Cormen et al.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>Before C++11, <code>std::rotate()</code> used to return <code>void</code>.<a href="#fnref4">↩</a></p></li>
-<li id="fn5"><p><code>std::rotate()</code> can be implemented in <em>O(n)</em> time using three reverses. In fact, this implementation results in a number of swaps almost exactly equals to <em>n</em>.<a href="#fnref5">↩</a></p></li>
-<li id="fn6"><p>I was informed that this merge implementation is simple but not ideal. In-place merging can be done in <em>O(n log n)</em> worst case time but the implementation is more complex.<a href="#fnref6">↩</a></p></li>
+<li id="fn1" role="doc-endnote"><p>``One thing every sorcerer will tell you is if you have the name of a
+spirit, you have power over it.’’ —Gerald Jay Sussman<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>Obviously I won’t be using <code>std::sort()</code>!<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Introduction to Algorithms, by Cormen et al.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>Before C++11, <code>std::rotate()</code> used to return <code>void</code>.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p><code>std::rotate()</code> can be implemented in <em>O(n)</em> time using three
+reverses. In fact, this implementation results in a number of
+swaps almost exactly equals to <em>n</em>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p>I was informed that this merge implementation is simple but
+not ideal. In-place merging can be done in <em>O(n log n)</em>
+worst case time but the implementation is more complex.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</div>
+</section>
   </p>
 
   <p class="tag-list">
@@ -332,133 +450,208 @@ I quicksort_stable_partition(I first, I last, S offset) {
 
 <section class="post-body">
   <p>
-  <p>One of the primary needs of a developer, while debugging any code, is to be able to inspect, not only primitive values, but also compound values (like objects). The problem is that objects are usually littered with lots of irrelevant information that obscure the essence of what the developer might be interested in. It becomes even worse when the interesting pieces of an object are in dynamic memory, in which case all you get to see are dumb pointers. Consider the following code:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span class="pp">#include </span><span class="im">&lt;vector&gt;</span>
-
-<span class="dt">int</span> main() {
-  <span class="bu">std::</span>vector&lt;<span class="dt">int</span>&gt; v;
-  v.push_back(<span class="dv">1</span>);
-  v.push_back(<span class="dv">2</span>);
-  v.push_back(<span class="dv">3</span>);
-  v.push_back(<span class="dv">4</span>);
-  v.push_back(<span class="dv">5</span>);
-
-  <span class="cf">return</span> <span class="dv">0</span>;
-}</code></pre></div>
-<p>Here’s the output from GDB when attempting to print <code>v</code> just before returning<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
-<span class="er">$</span><span class="dv">1</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
-    __begin_ = <span class="bn">0x100103a70</span>,
-    __end_ = <span class="bn">0x100103a84</span>,
-    __end_cap_ = {
-      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
-        __first_ = <span class="bn">0x100103a90</span>
-      }, &lt;No data fields&gt;}
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>It’s obvious that this output is essentially useless. It’s basically a bunch of memory addresses and obscure data types with absolutely no reference to what the developer is looking for, the entries of the vector!</p>
-<p>GDB solves this problem (and others) by providing a full-fledged <a href="https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html">Python API</a><a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a> for interacting with the inferior<a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>. This API can be used for inspecting all sorts of information about the inferior, including static and dynamic value types, symbols and symbol tables, stack frames and even allows you to evaluate expressions in the inferior language. Moreover, this API has facilities for controlling GDB itself, by defining and executing GDB commands, creating breakpoints and watchpoints, inspecting breakpoint attributes and much more.</p>
-<p>What we care about here is GDB’s <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API</a>. This API enables the creation of custom pretty printers for values of user-defined types. The goal is to allow the developer to use the plain old GDB <code>print</code> command on values of user-defined types and still get to see only the relevant pieces of the printed value.</p>
-<p>GDB’s Python API represents values from the inferior using the <code>gdb.Value</code> class, and represents types using the <code>gdb.Type</code> class. Documentation for these classes can be found <a href="https://sourceware.org/gdb/onlinedocs/gdb/Values-From-Inferior.html">here</a> and <a href="https://sourceware.org/gdb/onlinedocs/gdb/Types-In-Python.html">here</a>. The most important aspect about <code>gdb.Value</code> is that for object values, you can access object members using Python’s dictionary syntax e.g. <code>obj.mem</code> becomes <code>obj[&quot;mem&quot;]</code>.</p>
-<p>To create a pretty printer for a certain type, you need to create a <em>printer</em> class that has at least one method, <code>to_string()</code>, which converts that type to string for printing. If you know that your type represents some sort of an array, list or table, you may also need to add a <code>children()</code> method to your class. This later method must return an object conforming to the Python <a href="https://docs.python.org/2/library/stdtypes.html#iterator-types">iterator protocol</a>, where every item returned by that iterator must be a pair of child name and value as you wish to observe them in the output. If the child type also has a printer, GDB will automatically invoke it to print all the children.</p>
-<p>Let’s go ahead and write a pretty printer for <code>libc++</code>’s <code>std::vector</code><a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a>:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">import</span> gdb
-<span class="im">import</span> re
-
-<span class="kw">class</span> VectorPrinter(<span class="bu">object</span>):
-  <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span>
-  <span class="kw">class</span> _iterator(<span class="bu">object</span>):
-    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):
-      <span class="va">self</span>.counter <span class="op">=</span> <span class="dv">0</span>
-      <span class="va">self</span>.begin <span class="op">=</span> value[<span class="st">&quot;__begin_&quot;</span>]
-      <span class="va">self</span>.end <span class="op">=</span> value[<span class="st">&quot;__end_&quot;</span>]
-
-    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):
-      <span class="cf">return</span> <span class="va">self</span>
-
-    <span class="kw">def</span> <span class="bu">next</span>(<span class="va">self</span>):
-      <span class="cf">if</span> <span class="va">self</span>.begin <span class="op">==</span> <span class="va">self</span>.end:
-        <span class="cf">raise</span> <span class="pp">StopIteration</span>
-
-      ret <span class="op">=</span> (<span class="st">&quot;[</span><span class="sc">%d</span><span class="st">]&quot;</span> <span class="op">%</span> <span class="va">self</span>.counter, <span class="va">self</span>.begin.dereference())
-      <span class="va">self</span>.begin <span class="op">+=</span> <span class="dv">1</span>
-      <span class="va">self</span>.counter <span class="op">+=</span> <span class="dv">1</span>
-      <span class="cf">return</span> ret
-
-  <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):
-    <span class="va">self</span>.value <span class="op">=</span> value
-
-  <span class="kw">def</span> to_string(<span class="va">self</span>):
-    <span class="cf">return</span> <span class="st">&quot;vector&quot;</span>
-
-  <span class="kw">def</span> children(<span class="va">self</span>):
-    <span class="cf">return</span> <span class="va">self</span>._iterator(<span class="va">self</span>.value)</code></pre></div>
-<p>Note that we can access private members of <code>std::vector</code> (<code>__begin_</code> and <code>__end_</code>). This is because access rights are inactive in the debugger. You may wonder why we bother accessing data members of <code>std::vector</code> if we can just call <code>v.begin()</code> and <code>v.end()</code>. There are two reasons for this:</p>
-<ol style="list-style-type: decimal">
-<li><p>In many cases we just can’t, because these member functions are usually small enough that the compiler usually decides to inline them. If you try to print the <code>begin()</code> iterator for instance, you may get an error that looks something like this: <code>Cannot evaluate function -- may be inlined</code>.</p></li>
-<li><p>If the type you’re trying to print is an <em>incomplete type</em> e.g. if it’s not part of the process binary (it might be dynamically linked for instance), then you won’t even have access to any of the object’s members, in which case, the only way to refer to the object’s data members is by using pointer arithmetic.</p></li>
+  <p>One of the primary needs of a developer, while debugging any code, is to be able
+to inspect, not only primitive values, but also compound values (like objects).
+The problem is that objects are usually littered with lots of irrelevant
+information that obscure the essence of what the developer might be interested
+in. It becomes even worse when the interesting pieces of an object are in
+dynamic memory, in which case all you get to see are dumb pointers. Consider the
+following code:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;vector&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">std::</span>vector<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> v<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">1</span><span class="op">);</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">2</span><span class="op">);</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">3</span><span class="op">);</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">4</span><span class="op">);</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  v<span class="op">.</span>push_back<span class="op">(</span><span class="dv">5</span><span class="op">);</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Here’s the output from GDB when attempting to print <code>v</code> just before
+returning<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print v</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">1</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common<span class="op">&lt;</span><span class="kw">true</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    __begin_ <span class="op">=</span> <span class="bn">0x100103a70</span><span class="op">,</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    __end_ <span class="op">=</span> <span class="bn">0x100103a84</span><span class="op">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    __end_cap_ <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        __first_ <span class="op">=</span> <span class="bn">0x100103a90</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>It’s obvious that this output is essentially useless. It’s basically a bunch of
+memory addresses and obscure data types with absolutely no reference to what
+the developer is looking for, the entries of the vector!</p>
+<p>GDB solves this problem (and others) by providing a full-fledged
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Python-API.html">Python API</a><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>
+for interacting with the inferior<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. This API can be used for
+inspecting all sorts of information about the inferior, including static and
+dynamic value types, symbols and symbol tables, stack frames and even allows you
+to evaluate expressions in the inferior language. Moreover, this API has
+facilities for controlling GDB itself, by defining and executing GDB commands,
+creating breakpoints and watchpoints, inspecting breakpoint attributes and much
+more.</p>
+<p>What we care about here is GDB’s
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API</a>.
+This API enables the creation of custom pretty printers for values of
+user-defined types. The goal is to allow the developer to use the plain old GDB
+<code>print</code> command on values of user-defined types and still get to see only the
+relevant pieces of the printed value.</p>
+<p>GDB’s Python API represents values from the inferior using the <code>gdb.Value</code>
+class, and represents types using the <code>gdb.Type</code> class. Documentation for these
+classes can be found
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Values-From-Inferior.html">here</a> and
+<a href="https://sourceware.org/gdb/onlinedocs/gdb/Types-In-Python.html">here</a>. The most
+important aspect about <code>gdb.Value</code> is that for object values, you can access
+object members using Python’s dictionary syntax e.g. <code>obj.mem</code> becomes
+<code>obj["mem"]</code>.</p>
+<p>To create a pretty printer for a certain type, you need to create a <em>printer</em>
+class that has at least one method, <code>to_string()</code>, which converts that type to
+string for printing. If you know that your type represents some sort of an
+array, list or table, you may also need to add a <code>children()</code> method to your
+class. This later method must return an object conforming to the Python <a href="https://docs.python.org/2/library/stdtypes.html#iterator-types">iterator
+protocol</a>, where
+every item returned by that iterator must be a pair of child name and value as
+you wish to observe them in the output. If the child type also has a printer,
+GDB will automatically invoke it to print all the children.</p>
+<p>Let’s go ahead and write a pretty printer for <code>libc++</code>’s <code>std::vector</code><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gdb</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> re</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VectorPrinter(<span class="bu">object</span>):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">&quot;&quot;&quot;Prints an std::vector object.&quot;&quot;&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">class</span> _iterator(<span class="bu">object</span>):</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.counter <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.begin <span class="op">=</span> value[<span class="st">&quot;__begin_&quot;</span>]</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.end <span class="op">=</span> value[<span class="st">&quot;__end_&quot;</span>]</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__iter__</span>(<span class="va">self</span>):</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> <span class="va">self</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="bu">next</span>(<span class="va">self</span>):</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="va">self</span>.begin <span class="op">==</span> <span class="va">self</span>.end:</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">StopIteration</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>      ret <span class="op">=</span> (<span class="st">&quot;[</span><span class="sc">%d</span><span class="st">]&quot;</span> <span class="op">%</span> <span class="va">self</span>.counter, <span class="va">self</span>.begin.dereference())</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.begin <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      <span class="va">self</span>.counter <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> ret</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, value):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    <span class="va">self</span>.value <span class="op">=</span> value</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> to_string(<span class="va">self</span>):</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="st">&quot;vector&quot;</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> children(<span class="va">self</span>):</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">self</span>._iterator(<span class="va">self</span>.value)</span></code></pre></div>
+<p>Note that we can access private members of <code>std::vector</code> (<code>__begin_</code> and
+<code>__end_</code>). This is because access rights are inactive in the debugger. You may
+wonder why we bother accessing data members of <code>std::vector</code> if we can just call
+<code>v.begin()</code> and <code>v.end()</code>. There are two reasons for this:</p>
+<ol type="1">
+<li><p>In many cases we just can’t, because these member functions are usually small
+enough that the compiler usually decides to inline them. If you try to print
+the <code>begin()</code> iterator for instance, you may get an error that looks
+something like this: <code>Cannot evaluate function -- may be inlined</code>.</p></li>
+<li><p>If the type you’re trying to print is an <em>incomplete type</em> e.g. if it’s not
+part of the process binary (it might be dynamically linked for instance),
+then you won’t even have access to any of the object’s members, in which
+case, the only way to refer to the object’s data members is by using pointer
+arithmetic.</p></li>
 </ol>
-<p>Notice also that <code>to_string()</code> doesn’t actually do anything here. It just returns the string <code>&quot;vector&quot;</code>. That’s because when you create a <code>children()</code> method, the output of <code>to_string()</code> represents the name of the printed list. It gets prepended (along with a succeeding <code>=</code> sign) to the output list resulting from the call to <code>children()</code>.</p>
-<p><code>children()</code> returns an object of the <code>VectorPrinter._iterator</code> class. This class conforms to the Python iterator protocol by implementing a <code>next()</code> method, which returns the next value of the vector (actually a name/value pair) and raises a <code>StopIteration</code> exception when no more entries are found in the vector. The <code>dereference()</code> method of <code>gdb.Value</code> returns the value pointed to by a pointer when the <code>gdb.Value</code> represents a pointer and raises an exception otherwise.</p>
-<p>To activate the pretty printer, we need to define a <em>lookup</em> function for our type and a registration function for our printer(s):</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> vec_lookup_function(val):
-  lookup_tag <span class="op">=</span> val.<span class="bu">type</span>.tag
-  <span class="cf">if</span> lookup_tag <span class="op">==</span> <span class="va">None</span>:
-    <span class="cf">return</span> <span class="va">None</span>
-
-  regex <span class="op">=</span> re.<span class="bu">compile</span>(<span class="st">&quot;^.*vector_base&lt;.*,.*&gt;$&quot;</span>)
-  <span class="cf">if</span> regex.match(lookup_tag):
-    <span class="cf">return</span> VectorPrinter(val)
-
-  <span class="cf">return</span> <span class="va">None</span>
-
-<span class="kw">def</span> register_libcxx_printers(objfile):
-  objfile.pretty_printers.append(vec_lookup_function)</code></pre></div>
-<p>The lookup function is called by GDB for every value it attempts to print. If the return value is not <code>None</code>, GDB uses it as a printer object for that value. In this case the <code>std::vector</code> lookup function inspects the value type tag. That’s the word that comes after a <code>class</code>, <code>struct</code> or <code>union</code> keywords in C++ i.e. it’s the class name. Since in <code>libc++</code>, <code>std::vector</code> unfolds to a type that has the word <code>vector_base</code> in it, it’s possible to recognize that type using a regular expression as shown above.</p>
-<p>Finally, we need to make sure GDB loads this file at startup. To do so, we need to make sure the printer module is in the <code>PYTHONPATH</code> and call the printer registration function in <code>~/.gdbinit</code>:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">python
-<span class="im">from</span> libcxx.printers <span class="im">import</span> register_libcxx_printers
-register_libcxx_printers(gdb)
-end</code></pre></div>
+<p>Notice also that <code>to_string()</code> doesn’t actually do anything here. It just
+returns the string <code>"vector"</code>. That’s because when you create a <code>children()</code>
+method, the output of <code>to_string()</code> represents the name of the printed list.
+It gets prepended (along with a succeeding <code>=</code> sign) to the output list
+resulting from the call to <code>children()</code>.</p>
+<p><code>children()</code> returns an object of the <code>VectorPrinter._iterator</code> class. This
+class conforms to the Python iterator protocol by implementing a <code>next()</code>
+method, which returns the next value of the vector (actually a name/value pair)
+and raises a <code>StopIteration</code> exception when no more entries are found in the
+vector. The <code>dereference()</code> method of <code>gdb.Value</code> returns the value pointed to
+by a pointer when the <code>gdb.Value</code> represents a pointer and raises an exception
+otherwise.</p>
+<p>To activate the pretty printer, we need to define a <em>lookup</em> function for our
+type and a registration function for our printer(s):</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> vec_lookup_function(val):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  lookup_tag <span class="op">=</span> val.<span class="bu">type</span>.tag</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> lookup_tag <span class="op">==</span> <span class="va">None</span>:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  regex <span class="op">=</span> re.<span class="bu">compile</span>(<span class="st">&quot;^.*vector_base&lt;.*,.*&gt;$&quot;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> regex.match(lookup_tag):</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> VectorPrinter(val)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="va">None</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> register_libcxx_printers(objfile):</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  objfile.pretty_printers.append(vec_lookup_function)</span></code></pre></div>
+<p>The lookup function is called by GDB for every value it attempts to print. If
+the return value is not <code>None</code>, GDB uses it as a printer object for that value.
+In this case the <code>std::vector</code> lookup function inspects the value type tag.
+That’s the word that comes after a <code>class</code>, <code>struct</code> or <code>union</code> keywords in C++
+i.e. it’s the class name. Since in <code>libc++</code>, <code>std::vector</code> unfolds to a type
+that has the word <code>vector_base</code> in it, it’s possible to recognize that type
+using a regular expression as shown above.</p>
+<p>Finally, we need to make sure GDB loads this file at startup. To do so, we
+need to make sure the printer module is in the <code>PYTHONPATH</code> and call the printer
+registration function in <code>~/.gdbinit</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>python</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> libcxx.printers <span class="im">import</span> register_libcxx_printers</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>register_libcxx_printers(gdb)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>end</span></code></pre></div>
 <p>Here’s the output from GDB using this pretty printer:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print v
-<span class="er">$</span><span class="dv">1</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = vector = {
-    [<span class="dv">0</span>] = <span class="dv">1</span>,
-    [<span class="dv">1</span>] = <span class="dv">2</span>,
-    [<span class="dv">2</span>] = <span class="dv">3</span>,
-    [<span class="dv">3</span>] = <span class="dv">4</span>,
-    [<span class="dv">4</span>] = <span class="dv">5</span>
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>At any point, if you need to print the <em>raw</em> version of a vector, you can use the <code>/r</code> switch:</p>
-<div class="sourceCode"><pre class="sourceCode cpp"><code class="sourceCode cpp">(gdb) print /r v
-<span class="er">$</span><span class="dv">2</span> = {
-  &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;&gt; = {
-    &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common&lt;<span class="kw">true</span>&gt;&gt; = {&lt;No data fields&gt;},
-    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base&lt;<span class="dt">int</span>, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt; &gt;:
-    __begin_ = <span class="bn">0x100103a70</span>,
-    __end_ = <span class="bn">0x100103a84</span>,
-    __end_cap_ = {
-      &lt;<span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;&gt; = {
-        &lt;<span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;&gt; = {&lt;No data fields&gt;},
-        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp&lt;<span class="dt">int</span>*, <span class="bu">std::</span>__1<span class="bu">::</span>allocator&lt;<span class="dt">int</span>&gt;, <span class="dv">2</span>&gt;:
-        __first_ = <span class="bn">0x100103a90</span>
-      }, &lt;No data fields&gt;}
-  }, &lt;No data fields&gt;}</code></pre></div>
-<p>There are different variations for how to create printer classes and lookup and registration function, but I wanted to keep things simple in this tutorial. For more information, check out the <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API documentation</a>.</p>
-<div class="footnotes">
+<div class="sourceCode" id="cb6"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print v</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">1</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> vector <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">0</span><span class="op">]</span> <span class="op">=</span> <span class="dv">1</span><span class="op">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">1</span><span class="op">]</span> <span class="op">=</span> <span class="dv">2</span><span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">2</span><span class="op">]</span> <span class="op">=</span> <span class="dv">3</span><span class="op">,</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">3</span><span class="op">]</span> <span class="op">=</span> <span class="dv">4</span><span class="op">,</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">[</span><span class="dv">4</span><span class="op">]</span> <span class="op">=</span> <span class="dv">5</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>At any point, if you need to print the <em>raw</em> version of a vector, you can use
+the <code>/r</code> switch:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="op">(</span>gdb<span class="op">)</span> print <span class="op">/</span>r v</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="er">$</span><span class="dv">2</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__vector_base_common<span class="op">&lt;</span><span class="kw">true</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    members of <span class="bu">std::</span>__1<span class="bu">::</span>__vector_base<span class="op">&lt;</span><span class="dt">int</span><span class="op">,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">&gt;:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    __begin_ <span class="op">=</span> <span class="bn">0x100103a70</span><span class="op">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    __end_ <span class="op">=</span> <span class="bn">0x100103a84</span><span class="op">,</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    __end_cap_ <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>      <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">&lt;</span><span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;&gt;</span> <span class="op">=</span> <span class="op">{&lt;</span>No data fields<span class="op">&gt;},</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>        members of <span class="bu">std::</span>__1<span class="bu">::</span>__libcpp_compressed_pair_imp<span class="op">&lt;</span><span class="dt">int</span><span class="op">*,</span> <span class="bu">std::</span>__1<span class="bu">::</span>allocator<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;,</span> <span class="dv">2</span><span class="op">&gt;:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>        __first_ <span class="op">=</span> <span class="bn">0x100103a90</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">},</span> <span class="op">&lt;</span>No data fields<span class="op">&gt;}</span></span></code></pre></div>
+<p>There are different variations for how to create printer classes and lookup and
+registration function, but I wanted to keep things simple in this tutorial.
+For more information, check out the <a href="https://sourceware.org/gdb/onlinedocs/gdb/Pretty-Printing-API.html">Pretty Printing API
+documentation</a>.</p>
+<section class="footnotes footnotes-end-of-document" role="doc-endnotes">
 <hr />
 <ol>
-<li id="fn1"><p>I’m using Clang’s <code>libc++</code> standard library here. If you use GCC’s <code>libstdc++</code>, your mileage may vary.<a href="#fnref1">↩</a></p></li>
-<li id="fn2"><p>GDB has to be configured with <code>--with-python</code> for this to work.<a href="#fnref2">↩</a></p></li>
-<li id="fn3"><p>The process under debugging.<a href="#fnref3">↩</a></p></li>
-<li id="fn4"><p>For <code>libstdc++</code>, you can use any of the tools mentioned <a href="https://sourceware.org/gdb/wiki/STLSupport">here</a>. I should also mention that <a href="https://lldb.llvm.org">LLDB</a> already prints <code>libc++</code>’s STL containers pretty decently. Check it out before rolling out your own GDB printers.<a href="#fnref4">↩</a></p></li>
+<li id="fn1" role="doc-endnote"><p>I’m using Clang’s <code>libc++</code> standard library here. If you use GCC’s
+<code>libstdc++</code>, your mileage may vary.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>GDB has to be configured with <code>--with-python</code> for this to work.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>The process under debugging.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>For <code>libstdc++</code>, you can use any of the tools mentioned
+<a href="https://sourceware.org/gdb/wiki/STLSupport">here</a>. I should also
+mention that <a href="https://lldb.llvm.org">LLDB</a> already prints <code>libc++</code>’s STL
+containers pretty decently. Check it out before rolling out your own
+GDB printers.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</div>
+</section>
   </p>
 
   <p class="tag-list">
@@ -482,8 +675,6 @@ end</code></pre></div>
       <!--[if gt IE 7]><!-->
       <aside id="socialbar">
         <section>
-          <a href="https://google.com/+HaithamGad" target="_blank" title="Google+">
-            <i class="fa fa-google-plus-box"></i></a>
           <a href="https://twitter.com/hgad" target="_blank" title="Twitter">
             <i class="fa fa-twitter-box"></i></a>
           <a href="https://www.linkedin.com/in/haithamgad" target="_blank" title="LinkedIn"><i class="fa fa-linkedin-box"></i></a>
@@ -516,17 +707,16 @@ end</code></pre></div>
     <script src="./js/plugins.js"></script>
     <script src="./js/main.js"></script>
 
-    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-45318006-1"></script>
     <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
-      ga('create', 'UA-45318006-1', 'hgad.net');
-      ga('send', 'pageview');
-
+      gtag('config', 'UA-45318006-1');
     </script>
+
   </body>
 </html>
 
